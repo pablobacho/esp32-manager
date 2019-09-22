@@ -17,6 +17,8 @@ const char * NETWORK_MANAGER_NAMESPACE = NETWORK_MANAGER_NAMESPACE_CONFIG;
 char network_manager_ssid[];
 char network_manager_password[];
 
+uint8_t network_manager_status = 0;
+
 settings_manager_handle_t network_manager_settings_handle;
 
 ESP_EVENT_DEFINE_BASE(NETWORK_MANAGER_EVENT_BASE);
@@ -223,9 +225,24 @@ esp_err_t network_manager_wifi_stop()
     return esp_wifi_stop();
 }
 
+bool network_manager_connected()
+{
+    return (network_manager_status & NETWORK_MANAGER_STATUS_CONNECTED) ? true : false;
+}
+
+bool network_manager_got_ip()
+{
+    return (network_manager_status & NETWORK_MANAGER_STATUS_GOT_IP) ? true : false;
+}
+
+bool network_manager_is_ap()
+{
+    return (network_manager_status & NETWORK_MANAGER_STATUS_AP_STARTED) ? true : false;
+}
+
 esp_err_t network_manager_event_handler(void * context, system_event_t * event)
 {
-    ESP_LOGD(TAG, "Event rised: %d", event->event_id);
+    ESP_LOGD(TAG, "Event: %d", event->event_id);
 
     switch(event->event_id) {
         case SYSTEM_EVENT_WIFI_READY:
@@ -248,11 +265,13 @@ esp_err_t network_manager_event_handler(void * context, system_event_t * event)
         case SYSTEM_EVENT_STA_CONNECTED:
             ESP_LOGD(TAG, "Connected to WiFi: %s", (char *) &event->event_info.connected.ssid);
             ESP_LOGD(TAG, "Event: STA_CONNECTED");
+            network_manager_status |= NETWORK_MANAGER_STATUS_CONNECTED;
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_STA_CONNECTED, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
-            esp_wifi_connect();
             ESP_LOGD(TAG, "Event: STA_DISCONNECTED");
+            network_manager_status &= ~NETWORK_MANAGER_STATUS_CONNECTED;
+            esp_wifi_connect();
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_STA_DISCONNECTED, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:
@@ -262,10 +281,12 @@ esp_err_t network_manager_event_handler(void * context, system_event_t * event)
         case SYSTEM_EVENT_STA_GOT_IP:
             ESP_LOGD(TAG, "Got IP: %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
             ESP_LOGD(TAG, "Event: STA_GOT_IP");
+            network_manager_status |= NETWORK_MANAGER_STATUS_GOT_IP;
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_STA_GOT_IP, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_STA_LOST_IP:
             ESP_LOGD(TAG, "Event: STA_LOST_IP");
+            network_manager_status &= ~NETWORK_MANAGER_STATUS_GOT_IP;
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_STA_LOST_IP, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_STA_WPS_ER_SUCCESS:
@@ -286,10 +307,12 @@ esp_err_t network_manager_event_handler(void * context, system_event_t * event)
         break;
         case SYSTEM_EVENT_AP_START:
             ESP_LOGD(TAG, "Event: AP_START");
+            network_manager_status |= NETWORK_MANAGER_STATUS_AP_STARTED;
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_AP_START, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_AP_STOP:
             ESP_LOGD(TAG, "Event: AP_STOP");
+            network_manager_status &= ~NETWORK_MANAGER_STATUS_AP_STARTED;
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_AP_STOP, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_AP_STACONNECTED:

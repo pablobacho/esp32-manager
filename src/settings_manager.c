@@ -160,6 +160,12 @@ esp_err_t settings_manager_commit_to_nvs(settings_manager_handle_t handle)
                 case u64:
                     e = nvs_set_u64(handle->nvs_handle, entry->key, *((uint64_t *) entry->value));
                 break;
+                case flt:
+                    e = nvs_set_blob(handle->nvs_handle, entry->key, (float *) entry->value, sizeof(float));
+                break;
+                case dbl:
+                    e = nvs_set_blob(handle->nvs_handle, entry->key, (double *) entry->value, sizeof(double));
+                break;
                 case text: // This type needs to be null-terminated
                 case password:
                     e = nvs_set_str(handle->nvs_handle, entry->key, (char *) entry->value);
@@ -203,6 +209,8 @@ esp_err_t settings_manager_read_from_nvs(settings_manager_handle_t handle)
     esp_err_t e = ESP_OK;
     uint8_t error_counter = 0; // When reading an entry from NVS throws error, it will retry to read it a number of times.
 
+    size_t blob_length; // length parameter for blob values
+
     if(handle == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -237,6 +245,13 @@ esp_err_t settings_manager_read_from_nvs(settings_manager_handle_t handle)
                 case u64:
                     e = nvs_get_u64(handle->nvs_handle, entry->key, (uint64_t *) entry->value);
                 break;
+                case flt:
+                    blob_length = sizeof(float);
+                    e = nvs_get_blob(handle->nvs_handle, entry->key, entry->value, &blob_length);
+                break;
+                case dbl:
+                    blob_length = sizeof(double);
+                    e = nvs_get_blob(handle->nvs_handle, entry->key, entry->value, &blob_length);
                 case text:
                 case password: ; // ; is an empty statement because labels need to be followed by a statement, not a declaration.
                     size_t len; // nvs_get_str needs a non-zero pointer to store the string length, even if we don't need it.
@@ -312,6 +327,12 @@ esp_err_t settings_manager_entry_to_string(char * dest, settings_manager_entry_t
         break;
         case u64:
             sprintf(dest, "%lu", (unsigned long int) ((uint64_t *) entry->value));
+        break;
+        case flt:
+            sprintf(dest, "%f", (float) *((float *) entry->value));
+        break;
+        case dbl:
+            sprintf(dest, "%lf", (double) *((double *) entry->value));
         break;
         case text:
         case password:

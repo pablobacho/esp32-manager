@@ -52,6 +52,11 @@ extern const char * NETWORK_MANAGER_NAMESPACE;  /*!< String to store namespace. 
 extern char network_manager_ssid[NETWORK_MANAGER_SSID_MAX_LENGTH +1]; /*!< String to store SSID to connect to in STATION mode */
 extern char network_manager_password[NETWORK_MANAGER_PASSWORD_MAX_LENGTH +1]; /*!< String to store password of the SSID to connect to in STATION mode */
 
+#define NETWORK_MANAGER_STATUS_CONNECTED    0b00000001
+#define NETWORK_MANAGER_STATUS_GOT_IP       0b00000010
+#define NETWORK_MANAGER_STATUS_AP_STARTED   0b00000100
+extern uint8_t network_manager_status;
+
 extern settings_manager_handle_t network_manager_settings_handle; /*!< settings_manager handle for this namespace */
 
 ESP_EVENT_DECLARE_BASE(NETWORK_MANAGER_EVENT_BASE); /*!< BASE event of this module */
@@ -130,6 +135,27 @@ esp_err_t network_manager_wifi_start_ap_mode();
  *          ESP_ERR_WIFI_NOT_INIT if wifi not initialized
  */
 esp_err_t network_manager_wifi_stop();
+
+/**
+ * @brief   Check if device connected to WiFi network.
+ * 
+ * @return  Connection status
+ */
+bool network_manager_connected();
+
+/**
+ * @brief   Check if device got IP address.
+ * 
+ * @return  IP status
+ */
+bool network_manager_got_ip();
+
+/**
+ * @brief   Check if AP is started.
+ * 
+ * @return  AP status
+ */
+bool network_manager_is_ap();
 
 /**
  * @brief   Event handler for network events.

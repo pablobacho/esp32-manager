@@ -11,6 +11,7 @@
 #define _SETTINGS_MANAGER_H_
 
 #include <string.h>
+#include <math.h>
 
 #include "esp_system.h"
 #include "esp_err.h"
@@ -32,7 +33,7 @@ extern "C" {
 /**
  * Settings type.
  */
-typedef enum {i8=0, u8=1, i16=2, u16=3, i32=4, u32=5, i64=6, u64=7,
+typedef enum {i8=0, u8=1, i16=2, u16=3, i32=4, u32=5, i64=6, u64=7, flt=8, dbl=9,
         multiple_choice=20, single_choice=21,
         text=40, password=41,
         blob=60, image=61} settings_manager_type_t;
@@ -59,7 +60,7 @@ typedef struct {
     const char * key;               /*!< unique key to identify the entry */
     settings_manager_type_t type;   /*!< type */
     void * value;                   /*!< pointer to the variable where the value of the setting is stored */
-    uint32_t attributes;                 /*!< attributes */
+    uint32_t attributes;            /*!< attributes */
 } settings_manager_entry_t;
 
 /**

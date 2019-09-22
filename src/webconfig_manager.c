@@ -448,42 +448,18 @@ esp_err_t webconfig_manager_page_setup_namespace(char * buffer, httpd_req_t * re
             // TBD Should this be made 2 switches so the common statements to different types don't get duplicated multiple times? (all the "strcat")
             switch(entry->type) {
                 case i8:
-                    strcat(buffer, "number\" value=\""); // This is common to all integral types
-                    itoa(*((int8_t *) entry->value), value, 10); // This is type-specific
-                    strcat(buffer, value); // This is common to all integral types too
-                    break;
                 case i16:
-                    strcat(buffer, "number\" value=\"");
-                    itoa(*((int16_t *) entry->value), value, 10);
-                    strcat(buffer, value);
-                    break;
                 case i32:
-                    strcat(buffer, "number\" value=\"");
-                    itoa(*((int32_t *) entry->value), value, 10);
-                    strcat(buffer, value);
-                    break;
                 case i64:
-                    // TODO Implement i64 to string (sprintf)
-                    ESP_LOGE(TAG, "Not implemented");
-                    break;
                 case u8:
-                    strcat(buffer, "number\" value=\"");
-                    itoa(*((uint8_t *) entry->value), value, 10);
-                    strcat(buffer, value);
-                    break;
                 case u16:
-                    strcat(buffer, "number\" value=\"");
-                    itoa(*((uint16_t *) entry->value), value, 10);
-                    strcat(buffer, value);
-                    break;
                 case u32:
-                    strcat(buffer, "number\" value=\"");
-                    itoa(*((uint32_t *) entry->value), value, 10);
-                    strcat(buffer, value);
-                    break;
                 case u64:
-                    // TODO Implement u64 to string (sprintf)
-                    ESP_LOGE(TAG, "Not implemented");
+                case flt:
+                case dbl:
+                    strcat(buffer, "number\" value=\"");
+                    settings_manager_entry_to_string(value, entry);
+                    strcat(buffer, value);
                     break;
                 case text: // This type needs to be null-terminated
                     strcat(buffer, "text\" value=\"");
@@ -511,7 +487,7 @@ esp_err_t webconfig_manager_page_setup_namespace(char * buffer, httpd_req_t * re
         }
     }
 
-    strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a href=\"/\">Back</a></body></html>");
+    strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a href=\"/setup\">Back</a></body></html>");
 
     return ESP_OK;
 }
@@ -566,6 +542,8 @@ esp_err_t webconfig_manager_update_namespace_entry(settings_manager_entry_t * en
             strcpy((char *) entry->value, value_str);
             break;
         // TODO Implement these cases
+        case flt:
+        case dbl:
         case single_choice:
         case multiple_choice:
         case blob: // Data structures, binary and other non-null-terminated types go here

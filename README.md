@@ -42,7 +42,7 @@ Where `settings_handle` is a pointer to the namespace handle that will be create
 
 ### Settings entries
 
-Settings are normal variables that exist in your program. To use them with `settings_manager` you need to register them under a namespace:
+Settings are regular variables that exist in your program. To use them with `settings_manager` you need to register them under a namespace:
 
     uint32_t timeout = 1280u;
     settings_manager_register_setting(settings_handle, "timeout", u32, (void *) &timeout, SETTINGS_MANAGER_ATTR_READWRITE);
