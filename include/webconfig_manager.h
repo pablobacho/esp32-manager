@@ -19,28 +19,36 @@
 extern "C" {
 #endif
 
-#define WEBCONFIG_MANAGER_WEB_TITLE "ESP32 Webconfig Manager"   /*!< Title. Will be shown on generated pages. */
+#define WEBCONFIG_MANAGER_NAMESPACE_KEY         "webconfig"
+#define WEBCONFIG_MANAGER_NAMESPACE_FRIENDLY    "Web configuration"
+#define WEBCONFIG_MANAGER_WEB_TITLE             "ESP32 Webconfig Manager"   /*!< Title. Will be shown on generated pages. */
 
-#define WEBCONFIG_MANAGER_URIS_SIZE         3   /*!< Number of uris that will be registered */
+#define WEBCONFIG_MANAGER_URIS_SIZE         4   /*!< Number of uris that will be registered */
 extern httpd_uri_t webconfig_manager_uris[WEBCONFIG_MANAGER_URIS_SIZE]; /*!< Array to store uris */
 
 #define WEBCONFIG_MANAGER_URI_ROOT_INDEX    0           /*!< Position of the root uri in the uris array*/
 #define WEBCONFIG_MANAGER_URI_ROOT_URL      "/"         /*!< uri of the root document */
-#define WEBCONFIG_MANAGER_URI_SETUP_INDEX   1           /*!< Position of the setup uri in the uris array */
+#define WEBCONFIG_MANAGER_URI_CSS_INDEX     1           /*!< Position of the CSS file uri in the uris array*/
+#define WEBCONFIG_MANAGER_URI_CSS_URL       "/style.min.css" /*!< uri of the CSS file */
+#define WEBCONFIG_MANAGER_URI_SETUP_INDEX   2           /*!< Position of the setup uri in the uris array */
 #define WEBCONFIG_MANAGER_URI_SETUP_URL     "/setup"    /*!< Uri of the setup page */
-#define WEBCONFIG_MANAGER_URI_GET_INDEX     2           /*!< Position of the get uri in the uris array */
+#define WEBCONFIG_MANAGER_URI_GET_INDEX     3           /*!< Position of the get uri in the uris array */
 #define WEBCONFIG_MANAGER_URI_GET_URL       "/get"      /*!< uri of the get page */
 
 #define WEBCONFIG_MANAGER_URI_PARAM_REBOOT  "reboot"    /*!< Query key of the parameter for requesting a reboot */
-#define WEBCONFIG_MANAGER_REBOOT_DELAY  3000            /*!< Delay between serving the reboot page and rebooting the device */
+#define WEBCONFIG_MANAGER_REBOOT_DELAY      3000            /*!< Delay between serving the reboot page and rebooting the device */
 
-#define WEBCONFIG_MANAGER_URI_PARAM_GET_NAMESPACE "namespace" /*!< Query key to select namespace using the get uri */
-#define WEBCONFIG_MANAGER_URI_PARAM_GET_ENTRY "key"     /*!< Query key to request a setting using the get uri */
+#define WEBCONFIG_MANAGER_URI_PARAM_GET_NAMESPACE   "namespace" /*!< Query key to select namespace using the get uri */
+#define WEBCONFIG_MANAGER_URI_PARAM_GET_ENTRY       "key"     /*!< Query key to request a setting using the get uri */
 
 #define WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH    1500    /*!< Maximum lenght of an HTTP response */
 
 extern char webconfig_manager_content[CONFIG_HTTPD_MAX_REQ_HDR_LEN +1]; /*!< Buffer to store requests' content */
 extern char webconfig_manager_buffer[WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH +1]; /*!< Buffer to store responses */
+
+/** @brief  Milligram CSS file */
+extern const uint8_t style_min_css_start[] asm("_binary_style_min_css_start");
+extern const uint8_t style_min_css_end[] asm("_binary_style_min_css_end");
 
 /**
  * @brief   Initialize webconfig_manager
@@ -84,6 +92,16 @@ void webconfig_manager_event_handler(void * handler_arg, esp_event_base_t base, 
  *          ESP_FAIL: error
  */
 esp_err_t webconfig_manager_uri_handler_root(httpd_req_t *req);
+
+/**
+ * @brief   Handler to call when CSS stylesheet is requested ("/res/style.min.css")
+ * 
+ * @param   req Pointer to the request handle
+ * @return  ESP_OK: success
+ *          ESP_FAIL: error
+ */
+esp_err_t webconfig_manager_uri_handler_style(httpd_req_t *req);
+
 
 /**
  * @brief   Handler to call when setup page is requested

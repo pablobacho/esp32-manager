@@ -29,6 +29,11 @@ esp_err_t webconfig_manager_init()
     webconfig_manager_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].handler    = webconfig_manager_uri_handler_root;
     webconfig_manager_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].user_ctx   = NULL;
 
+    webconfig_manager_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].uri         = WEBCONFIG_MANAGER_URI_CSS_URL;
+    webconfig_manager_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].method      = HTTP_GET;
+    webconfig_manager_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].handler     = webconfig_manager_uri_handler_style;
+    webconfig_manager_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].user_ctx    = NULL;
+
     webconfig_manager_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].uri       = WEBCONFIG_MANAGER_URI_SETUP_URL;
     webconfig_manager_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].method    = HTTP_GET;
     webconfig_manager_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].handler   = webconfig_manager_uri_handler_setup;
@@ -188,6 +193,27 @@ esp_err_t webconfig_manager_uri_handler_root(httpd_req_t *req)
     }
 }
 
+esp_err_t webconfig_manager_uri_handler_style(httpd_req_t *req)
+{
+    esp_err_t e;
+    
+    e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
+    e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    e += httpd_resp_set_hdr(req, "Expires", "0");
+    if(e != ESP_OK) {
+        ESP_LOGE(TAG, "Error settings cache headers");
+    }
+
+    e = httpd_resp_send(req, (const char *) style_min_css_start, style_min_css_end-style_min_css_start);
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "Response sent");
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG, "Error sending response");
+        return ESP_FAIL;
+    }
+}
+
 esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
 {
     esp_err_t e;
@@ -206,19 +232,21 @@ esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
             // Get namespace handle
             settings_manager_namespace_t * namespace = NULL;
             for(uint8_t i=0; i < settings_manager_namespaces_size; ++i) {
-                if(!strcmp(webconfig_manager_buffer, settings_manager_namespaces[i].namespace)) {
+                if(!strcmp(webconfig_manager_buffer, settings_manager_namespaces[i].key)) {
                     namespace = &settings_manager_namespaces[i];
                     break;
                 }
             }
             // Check if namespace requested exists
             if(namespace != NULL) {
+                ESP_LOGD(TAG, "Selected namespace %s", namespace->key);
                 // Check if there are settings to update
                 uint16_t entry_updated = 0; // Flag to mark if any settings were changed
                 for(uint16_t i=0; i < settings_manager_entries_size; ++i) {
                     settings_manager_entry_t * entry = &settings_manager_entries[i];
-                    if(settings_manager_entries[i].namespace_id == namespace->id) {
-                        char encoded[100];
+                    if(entry->namespace_id == namespace->id) {
+                        char encoded[100]; // FIXME Magic number
+                        ESP_LOGD(TAG, "Searching for entry %s.%s", namespace->key, entry->key);
                         e = httpd_query_key_value(webconfig_manager_content, entry->key, encoded, sizeof(encoded));
                         if(e == ESP_OK) { // There is a setting to update
                             ESP_LOGD(TAG, "Value before decoding: %s", encoded);
@@ -227,7 +255,7 @@ esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
                             webconfig_manager_update_namespace_entry(entry, webconfig_manager_buffer);
                             ++entry_updated;
                             settings_manager_entry_to_string(encoded, entry);
-                            ESP_LOGD(TAG, "Updated entry %s.%s with value %s", namespace->namespace, entry->key, encoded);
+                            ESP_LOGD(TAG, "Updated entry %s.%s with value %s", namespace->key, entry->key, encoded);
                         } // Nothing to do if setting is not found in query string
                     }
                 }
@@ -240,6 +268,7 @@ esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
                     }
                 }
                 // Generate response
+                ESP_LOGD(TAG, "Generating response");
                 e = webconfig_manager_page_setup_namespace(webconfig_manager_buffer, req, namespace);
                 if(e == ESP_OK) {
                     ESP_LOGD(TAG, "Setup namespace page generated");
@@ -271,9 +300,9 @@ esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
     } else if(e == ESP_ERR_NOT_FOUND) { // there is no query string
         e = webconfig_manager_page_setup(webconfig_manager_buffer, req); // Return setup page
         if(e == ESP_OK) {
-            ESP_LOGD(TAG, "Homepage generated");
+            ESP_LOGD(TAG, "Setup page generated");
         } else {
-            ESP_LOGE(TAG, "Error generating homepage: %s", esp_err_to_name(e));
+            ESP_LOGE(TAG, "Error generating setup page: %s", esp_err_to_name(e));
             httpd_resp_set_status(req, HTTPD_500); // Set response to error 500
         }
     } else {
@@ -281,6 +310,13 @@ esp_err_t webconfig_manager_uri_handler_setup(httpd_req_t * req)
         httpd_resp_set_status(req, HTTPD_500); // Set response to error 500
     }
     
+    e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
+    e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    e += httpd_resp_set_hdr(req, "Expires", "0");
+    if(e != ESP_OK) {
+        ESP_LOGE(TAG, "Error settings cache headers");
+    }
+
     e = httpd_resp_send(req, webconfig_manager_buffer, strlen(webconfig_manager_buffer));
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Response sent");
@@ -308,7 +344,7 @@ esp_err_t webconfig_manager_uri_handler_get(httpd_req_t * req)
             // Get namespace handle
             settings_manager_namespace_t * namespace = NULL;
             for(uint8_t i=0; i < settings_manager_namespaces_size; ++i) {
-                if(!strcmp(webconfig_manager_buffer, settings_manager_namespaces[i].namespace)) {
+                if(!strcmp(webconfig_manager_buffer, settings_manager_namespaces[i].key)) {
                     namespace = &settings_manager_namespaces[i];
                     break;
                 }
@@ -354,6 +390,13 @@ esp_err_t webconfig_manager_uri_handler_get(httpd_req_t * req)
         httpd_resp_set_status(req, HTTPD_404);
     }
     
+    e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
+    e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    e += httpd_resp_set_hdr(req, "Expires", "0");
+    if(e != ESP_OK) {
+        ESP_LOGE(TAG, "Error settings cache headers");
+    }
+
     e = httpd_resp_send(req, webconfig_manager_buffer, strlen(webconfig_manager_buffer));
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Response sent");
@@ -376,9 +419,9 @@ esp_err_t webconfig_manager_page_root(char * buffer, httpd_req_t * req)
     // TODO Show featured values on home page
     // For now it is just a link to setup
 
-    strcpy(buffer, "<html><head></head><body>");
+    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
     strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body><p><a href=\"/setup\">Setup</a></a></body>");
+    strcat(buffer, "</head><body><p><a class=\"button\" href=\"/setup\">Setup</a></a></body>");
 
     return ESP_OK;
 }
@@ -392,7 +435,7 @@ esp_err_t webconfig_manager_page_reboot(char * buffer, httpd_req_t * req)
 
     // FIXME Buffer overrun protection
 
-    strcpy(buffer, "<html><head></head><body>");
+    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
     strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
     strcat(buffer, "</head><body>Rebooting device. Wait 10 seconds before clicking <a href=\"/setup\">back</a> (Link might not work if network settings were changed)</body>");
     
@@ -408,17 +451,17 @@ esp_err_t webconfig_manager_page_setup(char * buffer, httpd_req_t * req)
 
     // FIXME Buffer overrun protection
 
-    strcpy(buffer, "<html><head></head><body>");
+    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
     strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
     strcat(buffer, "</head><body><ul>");
     for(uint8_t i=0; i<settings_manager_namespaces_size; ++i) {
-        strcat(buffer, "<p><a href=\"/setup?namespace=");
-        strcat(buffer, settings_manager_namespaces[i].namespace);
+        strcat(buffer, "<li><a href=\"/setup?namespace=");
+        strcat(buffer, settings_manager_namespaces[i].key);
         strcat(buffer, "\">");
-        strcat(buffer, settings_manager_namespaces[i].namespace);
-        strcat(buffer, "</a></p>");
+        strcat(buffer, settings_manager_namespaces[i].friendly);
+        strcat(buffer, "</a></li>");
     }
-    strcat(buffer, "</ul><a href=\"/?reboot=1\">Reboot</a></body></html>");
+    strcat(buffer, "</ul><a class=\"button\" href=\"/?reboot=1\">Reboot device</a></body></html>");
 
     return ESP_OK;
 }
@@ -432,20 +475,19 @@ esp_err_t webconfig_manager_page_setup_namespace(char * buffer, httpd_req_t * re
 
     // FIXME Buffer overrun protection
 
-    strcpy(buffer, "<html><head></head><body>");
+    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" media=\"screen\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
     strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
     strcat(buffer, "</head><body><form method=\"get\" action=\"/setup\"><br/><input name=\"namespace\" type=\"hidden\" value=\"");
-    strcat(buffer, namespace->namespace);
+    strcat(buffer, namespace->key);
     strcat(buffer, "\"><br/>");
     
     for(uint16_t i=0; i < settings_manager_entries_size; ++i) {
         if(settings_manager_entries[i].namespace_id == namespace->id) {
             settings_manager_entry_t * entry = &settings_manager_entries[i];
             char value[50]; // FIXME Remove this magic number
-            strcat(buffer, entry->key);
+            strcat(buffer, entry->friendly);
             strcat(buffer, "<br/><input type=\"");
 
-            // TBD Should this be made 2 switches so the common statements to different types don't get duplicated multiple times? (all the "strcat")
             switch(entry->type) {
                 case i8:
                 case i16:
@@ -478,7 +520,7 @@ esp_err_t webconfig_manager_page_setup_namespace(char * buffer, httpd_req_t * re
                     //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
                 break;
                 default:
-                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", namespace->namespace, entry->key);
+                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", namespace->key, entry->key);
                 break;
             }
             strcat(buffer, "\" name=\"");

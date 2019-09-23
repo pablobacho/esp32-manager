@@ -43,7 +43,8 @@ typedef enum {i8=0, u8=1, i16=2, u16=3, i32=4, u32=5, i64=6, u64=7, flt=8, dbl=9
  */
 typedef struct {
     uint8_t id;             /*!< Namespace id. Should be the same as position in the namespace array. */
-    const char * namespace; /*!< Namespace name */
+    const char * key;       /*!< Namespace key */
+    const char * friendly;  /*!< Namespace friendly or human-readable name */
     nvs_handle nvs_handle;  /*!< NVS handle for this namespace */
 } settings_manager_namespace_t;
 
@@ -58,6 +59,7 @@ typedef settings_manager_namespace_t * settings_manager_handle_t;
 typedef struct {
     uint8_t namespace_id;           /*!< id of the namespace this entry belongs to */
     const char * key;               /*!< unique key to identify the entry */
+    const char * friendly;          /*!< Friendly or human-readable name */
     settings_manager_type_t type;   /*!< type */
     void * value;                   /*!< pointer to the variable where the value of the setting is stored */
     uint32_t attributes;            /*!< attributes */
@@ -89,16 +91,18 @@ esp_err_t settings_manager_init();
 /**
  * @brief   Register namespace with settings_manager
  * 
- * @param   namespace name of the namespace
+ * @param   key key of the namespace
+ * @param   friendly Friendly or human-readable name of the namespace
  * @return  handle to the namespace registered or null for error
  */
-settings_manager_handle_t settings_manager_register_namespace(const char * namespace);
+settings_manager_handle_t settings_manager_register_namespace(const char * key, const char * friendly);
 
 /**
  * @brief   Register settings entry
  * 
  * @param   handle namespace handle the entry belongs to
  * @param   key unique name of the setting
+ * @param   friendly friendly or human-readable name of the setting
  * @param   type type of the value to be stored
  * @param   value pointer to the variable where the value is
  * @param   attributes attributes for this entry
@@ -106,7 +110,7 @@ settings_manager_handle_t settings_manager_register_namespace(const char * names
  *          ESP_ERR_NO_MEM no empty slots available for this entry
  *          ESP_ERR_INVALID_ARG namespace handle is not valid
  */
-esp_err_t settings_manager_register_setting(settings_manager_handle_t handle, const char * key, settings_manager_type_t type, void * value, uint32_t attributes);
+esp_err_t settings_manager_register_setting(settings_manager_handle_t handle, const char * key, const char * friendly, settings_manager_type_t type, void * value, uint32_t attributes);
 
 /**
  * @brief   Commits all settings under a namespace to NVS for permanent storage

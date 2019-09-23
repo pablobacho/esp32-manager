@@ -150,6 +150,6 @@ I am building this component for a project I currently have, and I will be addin
 
 If you find a bug, improve documentation, add a feature, or anything else, I encourage you to open an issue and/or make a pull request.
 
-When implementing features, please follow [Espressif IoT Development Framework Style Guide](https://docs.espressif.com/projects/esp-idf/en/latest/contribute/style-guide.html) and their [Documenting Code Guide](https://docs.espressif.com/projects/esp-idf/en/latest/contribute/documenting-code.html)
+When contributing, please follow [Espressif IoT Development Framework Style Guide](https://docs.espressif.com/projects/esp-idf/en/latest/contribute/style-guide.html) and their [Documenting Code Guide](https://docs.espressif.com/projects/esp-idf/en/latest/contribute/documenting-code.html)
 
 Licensed under the MIT License.

@@ -26,18 +26,21 @@
 extern "C" {
 #endif
 
-#define NETWORK_MANAGER_NAMESPACE_CONFIG   "network"        /*!< Namespace to store settings of this module */
+#define NETWORK_MANAGER_NAMESPACE_KEY       "network"   /*!< Namespace to store settings of this module */
+#define NETWORK_MANAGER_NAMESPACE_FRIENDLY  "Network"   /*!< Network namespace friendly name */
 
-#define NETWORK_MANAGER_SSID_KEY           "ssid"           /*!< SSID entry key */
-#define NETWORK_MANAGER_SSID_MAX_LENGTH    32               /*!< Maximum length of an SSID */
-#define NETWORK_MANAGER_SSID_DEFAULT       ""               /*!< Default SSID to connect to */
+#define NETWORK_MANAGER_SSID_KEY            "ssid"      /*!< SSID entry key */
+#define NETWORK_MANAGER_SSID_FRIENDLY       "SSID"      /*!< SSID friendly name */
+#define NETWORK_MANAGER_SSID_MAX_LENGTH     32          /*!< Maximum length of an SSID */
+#define NETWORK_MANAGER_SSID_DEFAULT        ""          /*!< Default SSID to connect to */
 
-#define NETWORK_MANAGER_PASSWORD_KEY           "password"   /*!< password entry key */
-#define NETWORK_MANAGER_PASSWORD_MAX_LENGTH    63           /*!< Maximum password length */
-#define NETWORK_MANAGER_PASSWORD_DEFAULT       ""           /*!< Default password of the SSID to connect to */
+#define NETWORK_MANAGER_PASSWORD_KEY        "password"  /*!< password entry key */
+#define NETWORK_MANAGER_PASSWORD_FRIENDLY   "Password"  /*!< password friendly name */
+#define NETWORK_MANAGER_PASSWORD_MAX_LENGTH 63          /*!< Maximum password length */
+#define NETWORK_MANAGER_PASSWORD_DEFAULT    ""          /*!< Default password of the SSID to connect to */
 
-#define NETWORK_MANAGER_AP_SSID        "wifi-manager"       /*!< SSID to use when creating an AP */
-#define NETWORK_MANAGER_AP_PASSWORD    "12345678"           /*!< Password of the AP created */
+#define NETWORK_MANAGER_AP_SSID         "wifi-manager"  /*!< SSID to use when creating an AP */
+#define NETWORK_MANAGER_AP_PASSWORD     "12345678"      /*!< Password of the AP created */
 
 /**
  * Mode to start WiFi in

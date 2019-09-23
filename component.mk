@@ -5,3 +5,5 @@
 
 COMPONENT_SRCDIRS := . ./src
 COMPONENT_ADD_INCLUDEDIRS := . ./include
+
+COMPONENT_EMBED_FILES := res/style.min.css

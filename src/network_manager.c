@@ -11,9 +11,6 @@
 
 static const char * TAG = "network_manager";
 
-
-const char * NETWORK_MANAGER_NAMESPACE = NETWORK_MANAGER_NAMESPACE_CONFIG;
-
 char network_manager_ssid[];
 char network_manager_password[];
 
@@ -31,6 +28,8 @@ esp_err_t network_manager_init()
     e = esp_event_loop_create_default();
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "WiFi event loop created successfully");
+    } else if(e == ESP_ERR_INVALID_STATE) {
+        ESP_LOGW(TAG, "Default event loop was already started");    
     } else {
         ESP_LOGE(TAG, "Error creating WiFi event loop: %s", esp_err_to_name(e));
         return e;
@@ -67,7 +66,7 @@ esp_err_t network_manager_init()
     }
 
     // Register namespace with settings_manager
-    network_manager_settings_handle = settings_manager_register_namespace(NETWORK_MANAGER_NAMESPACE_CONFIG);
+    network_manager_settings_handle = settings_manager_register_namespace(NETWORK_MANAGER_NAMESPACE_KEY, NETWORK_MANAGER_NAMESPACE_FRIENDLY);
     if(network_manager_settings_handle != NULL) {
         ESP_LOGD(TAG, "Namespace registered");
     } else {
@@ -76,7 +75,7 @@ esp_err_t network_manager_init()
     }
 
     // Register settings with settings_manager
-    e = settings_manager_register_setting(network_manager_settings_handle, NETWORK_MANAGER_SSID_KEY, text, network_manager_ssid, SETTINGS_MANAGER_ATTR_READWRITE);
+    e = settings_manager_register_setting(network_manager_settings_handle, NETWORK_MANAGER_SSID_KEY, NETWORK_MANAGER_SSID_FRIENDLY, text, network_manager_ssid, SETTINGS_MANAGER_ATTR_READWRITE);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "network_manager_ssid registered with settings_manager");
     } else {
@@ -84,7 +83,7 @@ esp_err_t network_manager_init()
         return ESP_FAIL;
     }
 
-    e = settings_manager_register_setting(network_manager_settings_handle, NETWORK_MANAGER_PASSWORD_KEY, password, network_manager_password, SETTINGS_MANAGER_ATTR_WRITE);
+    e = settings_manager_register_setting(network_manager_settings_handle, NETWORK_MANAGER_PASSWORD_KEY, NETWORK_MANAGER_PASSWORD_FRIENDLY, password, network_manager_password, SETTINGS_MANAGER_ATTR_WRITE);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "network_manager_password registered with settings_manager");
     } else {
@@ -271,7 +270,8 @@ esp_err_t network_manager_event_handler(void * context, system_event_t * event)
         case SYSTEM_EVENT_STA_DISCONNECTED:
             ESP_LOGD(TAG, "Event: STA_DISCONNECTED");
             network_manager_status &= ~NETWORK_MANAGER_STATUS_CONNECTED;
-            esp_wifi_connect();
+            network_manager_wifi_stop();
+            network_manager_wifi_start_station_mode();
             esp_event_post(NETWORK_MANAGER_EVENT_BASE, NETWORK_MANAGER_EVENT_STA_DISCONNECTED, NULL, 0, portMAX_DELAY);
         break;
         case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:

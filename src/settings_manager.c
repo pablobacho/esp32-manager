@@ -7,7 +7,7 @@
  * This code is licensed under the MIT License.
  */
 
- #include "settings_manager.h"
+#include "settings_manager.h"
 
 static const char * TAG = "settings_manager";
 
@@ -44,56 +44,59 @@ esp_err_t settings_manager_init()
     return ESP_OK;
 }
 
-settings_manager_handle_t settings_manager_register_namespace(const char * namespace)
+settings_manager_handle_t settings_manager_register_namespace(const char * key, const char * friendly)
 {
     esp_err_t e;
 
-    ESP_LOGD(TAG, "Registering namespace: %s", namespace);
+    ESP_LOGD(TAG, "Registering namespace: %s", key);
 
-    // Check if there is space
-    if(settings_manager_namespaces_size >= SETTINGS_MANAGER_NAMESPACE_MAX_SIZE) {
-        ESP_LOGE(TAG, "Not enough memory to register namespace %s", namespace);
+    if(key == NULL || friendly == NULL) {
+        ESP_LOGE(TAG, "Error registering namespace: Argument NULL");
         return NULL;
     }
 
-    ESP_LOGD(TAG, "There is enough memory to register namespace. Checking if it already exists...");
+    // Check if there is space
+    if(settings_manager_namespaces_size >= SETTINGS_MANAGER_NAMESPACE_MAX_SIZE) {
+        ESP_LOGE(TAG, "Not enough memory to register namespace %s", key);
+        return NULL;
+    }
+
     // Check if namespace is already loaded
     for(uint8_t i = 0; i < settings_manager_namespaces_size; ++i) {
-        if(!strcmp(namespace, settings_manager_namespaces[i].namespace)) {
-            ESP_LOGW(TAG, "Namespace %s already loaded", namespace);
+        if(!strcmp(key, settings_manager_namespaces[i].key)) {
+            ESP_LOGW(TAG, "Namespace %s already loaded", key);
             return (settings_manager_handle_t) &settings_manager_namespaces[i];
         }
     }
 
-    ESP_LOGD(TAG, "Registering namespace..");
-
     // Register namespace & increment size pointer
     settings_manager_namespace_t * current_namespace = &settings_manager_namespaces[settings_manager_namespaces_size];
-    current_namespace->namespace = namespace;
+    current_namespace->key = key;
+    current_namespace->friendly = friendly;
     ESP_LOGD(TAG, "Opening NVS for R/W");
-    e = nvs_open(current_namespace->namespace, NVS_READWRITE, &current_namespace->nvs_handle);
+    e = nvs_open(current_namespace->key, NVS_READWRITE, &current_namespace->nvs_handle);
     if(e == ESP_OK) {
         current_namespace->id = settings_manager_namespaces_size++;
-        current_namespace->namespace = namespace;
-        ESP_LOGD(TAG, "Namespace %s registered with id %d. NVS open for R/W.", current_namespace->namespace, current_namespace->id);
+        current_namespace->key = key;
+        ESP_LOGD(TAG, "Namespace %s registered with id %d. NVS open for R/W.", current_namespace->key, current_namespace->id);
         return current_namespace;
     } else {
-        ESP_LOGE(TAG, "Cannot open namespace \"settings\" with read/write access");
+        ESP_LOGE(TAG, "Cannot open namespace \"%s\" with read/write access: %s", current_namespace->key, esp_err_to_name(e));
         return NULL;
     }
 }
 
-esp_err_t settings_manager_register_setting(settings_manager_handle_t handle, const char * key, settings_manager_type_t type, void * value, uint32_t attributes)
+esp_err_t settings_manager_register_setting(settings_manager_handle_t handle, const char * key, const char * friendly, settings_manager_type_t type, void * value, uint32_t attributes)
 {
     // Check valid handler
-    if(handle == NULL) {
-        ESP_LOGE(TAG, "Can't register setting: Invalid handle");
+    if(handle == NULL || key == NULL || friendly == NULL || value == NULL) {
+        ESP_LOGE(TAG, "Can't register setting: Invalid arguments");
         return ESP_ERR_INVALID_ARG;
     }
 
     // Check for space in memory
     if(settings_manager_entries_size >= SETTINGS_MANAGER_ENTRIES_MAX_SIZE) {
-        ESP_LOGE(TAG, "Not enough memory to register setting %s.%s", handle->namespace, key);
+        ESP_LOGE(TAG, "Not enough memory to register setting %s.%s", handle->key, key);
         return ESP_ERR_NO_MEM;
     }
 
@@ -114,6 +117,7 @@ esp_err_t settings_manager_register_setting(settings_manager_handle_t handle, co
     settings_manager_entry_t * entry = &settings_manager_entries[settings_manager_entries_size++];
     entry->namespace_id = handle->id;
     entry->key = key;
+    entry->friendly = friendly;
     entry->type = type;
     entry->value = value;
     entry->attributes = attributes;
@@ -176,15 +180,15 @@ esp_err_t settings_manager_commit_to_nvs(settings_manager_handle_t handle)
                     //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
                 break;
                 default:
-                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", handle->namespace, entry->key);
+                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", handle->key, entry->key);
                 break;
             }
             // Check for errors
             if(e == ESP_OK) {
-                ESP_LOGD(TAG, "Entry %s.%s set for NVS commit", handle->namespace, entry->key);
+                ESP_LOGD(TAG, "Entry %s.%s set for NVS commit", handle->key, entry->key);
                 ++entries_to_commit_counter;
             } else {
-                ESP_LOGE(TAG, "Entry %s.%s could not be set for NVS commit", handle->namespace, entry->key);
+                ESP_LOGE(TAG, "Entry %s.%s could not be set for NVS commit", handle->key, entry->key);
             }
         }
     }
@@ -192,14 +196,14 @@ esp_err_t settings_manager_commit_to_nvs(settings_manager_handle_t handle)
     if(entries_to_commit_counter > 0) {
         e = nvs_commit(handle->nvs_handle);
         if(e == ESP_OK) {
-            ESP_LOGD(TAG, "Namespace %s commited to NVS", handle->namespace);
+            ESP_LOGD(TAG, "Namespace %s commited to NVS", handle->key);
             return ESP_OK;
         } else {
-            ESP_LOGE(TAG, "Could not commit namespace %s to NVS", handle->namespace);
+            ESP_LOGE(TAG, "Could not commit namespace %s to NVS", handle->key);
             return ESP_FAIL;
         }
     } else {
-        ESP_LOGD(TAG, "Nothing to commit in namespace %s", handle->namespace);
+        ESP_LOGD(TAG, "Nothing to commit in namespace %s", handle->key);
         return ESP_OK;
     }
 }
@@ -264,27 +268,27 @@ esp_err_t settings_manager_read_from_nvs(settings_manager_handle_t handle)
                     //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
                 break;
                 default:
-                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", handle->namespace, entry->key);
+                    ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", handle->key, entry->key);
                     e = ESP_OK;
                 break;
             }
             if(e == ESP_OK) { // Entry read successfully from NVS
-                ESP_LOGD(TAG, "Entry %s.%s read from NVS", handle->namespace, entry->key);
+                ESP_LOGD(TAG, "Entry %s.%s read from NVS", handle->key, entry->key);
                 error_counter = 0;
             } else if(e == ESP_ERR_NVS_NOT_FOUND) { // Entry not found in NVS. Not an error.
                 error_counter = 0;
-                ESP_LOGD(TAG, "Entry %s.%s not found in NVS", handle->namespace, entry->key); // Todo: Should this be a warning, informational or just debug?
+                ESP_LOGD(TAG, "Entry %s.%s not found in NVS", handle->key, entry->key); // Todo: Should this be a warning, informational or just debug?
             } else {
-                ESP_LOGW(TAG, "Entry %s.%s could not be read from NVS. It will be erased.", handle->namespace, entry->key); // Something went wrong
+                ESP_LOGW(TAG, "Entry %s.%s could not be read from NVS. It will be erased.", handle->key, entry->key); // Something went wrong
                 if(error_counter > 0) { // If we tried already
-                    ESP_LOGE(TAG, "Erasing entry %s.%s.", handle->namespace, entry->key);
+                    ESP_LOGE(TAG, "Erasing entry %s.%s.", handle->key, entry->key);
                     e = nvs_erase_key(handle->nvs_handle, entry->key); // Erase the entry
                     if(e != ESP_OK) {
-                        ESP_LOGE(TAG, "Entry %s.%s could not be erased from NVS: %s", handle->namespace, entry->key, esp_err_to_name(e));
+                        ESP_LOGE(TAG, "Entry %s.%s could not be erased from NVS: %s", handle->key, entry->key, esp_err_to_name(e));
                         return ESP_FAIL;
                     }
                 } else { // If this is the first attempt to read the entry, try to read it again.
-                    ESP_LOGD(TAG, "Retrying to read entry %s.%s", handle->namespace, entry->key);
+                    ESP_LOGD(TAG, "Retrying to read entry %s.%s", handle->key, entry->key);
                     --i; // Decrement i so it the loop goes over the same entry again
                     ++error_counter; // Count it as an error
                 }
