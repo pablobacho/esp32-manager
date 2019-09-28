@@ -7,8 +7,13 @@
 - Simplifies reading from and writing to flash using NVS for any variable in your application. Just register any variable with esp32_manager and you will get simple read and write functions for NVS.
 - Easy WiFi connection to networks or creation of APs. Automatic AP creation for WiFi configuration.
 - Creates a web interface to configure any setting in your application registered with *esp32_manager*.
+- Easily publish values to MQTT in a structured and consistent way.
 
 ## Usage
+
+### Example project
+
+Check out the example project at [https://github.com/pablobacho/esp32-manager-example](https://github.com/pablobacho/esp32-manager-example)
 
 ### Setup workspace
 
@@ -77,7 +82,7 @@ And then register the entries:
 
 This will create a webpage under the url `http://[device_ip]/setup` that will list all registered namespaces. Clicking on a namespace, will open up a form with current values of the entries registered in that namespace. You can modify the values and submit the forms to update them.
 
-You can also get raw values by doing HTTP GET requests to the url `http://[device_ip]/get?namespace=[namespace_key]&entry=[entry_key]
+You can also get raw values by doing HTTP GET requests to the url `http://[device_ip]/get?namespace=[namespace.key]&entry=[entry.key]
 
 ### Load from and save to NVS (Flash)
 
@@ -112,8 +117,7 @@ You can also specify on what mode you want WiFi to start replacing AUTO by STA o
 - `AP` or *AP mode*: Creates an AP (access point) a 3rd device can connect to, such as a smartphone or computer.
 - `AUTO`: Auto will check whether there is a known SSID to connect to, and start in `STA` mode if there is, or `AP` if there is not.
 
-
-### Accessing programmatically from a remote machine
+### Accessing programmatically from a remote machine via HTTP
 
 All same operations can be perform programmatically from another machine connected to the same network via HTTP GET methods.
 
@@ -128,6 +132,20 @@ The link above will update the setting with the key "ssid" in the namespace "net
 There is a `get` uri that allows retrieving raw values from settings. The following example returns a string with the content of the setting `network.ssid`:
 
     http://192.168.4.1/get?namespace=network&key=ssid
+
+### Accessing programmatically from a remote machine via MQTT
+
+**NEW!** Includes preliminary MQTT support for obtaining information on entries.
+
+Using the web interface previously described, set the *MQTT Broker URL* under the *MQTT* section. After updating this field, please reboot the device for the change to take effect (can be done remotely via the web interface).
+
+Using the function `esp32_manager_mqtt_publish_entry` you can publish the entry information to the broker, such as:
+
+    esp32_manager_mqtt_publish_entry(&example_namespace, &counter_entry);
+
+This will publish the value of the entry to a topic build like: `/[hostname]/[namespace.key]/[entry.key]`. In this example the topic is:
+
+    /esp32-device/example_ns/counter
 
 ### Typical workflow
 

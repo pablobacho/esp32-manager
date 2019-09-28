@@ -1,7 +1,5 @@
 /**
- * esp32_manager_network.c - ESP-IDF component to work with settings
- * 
- * Implementation.
+ * esp32_manager_network.c
  * 
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.

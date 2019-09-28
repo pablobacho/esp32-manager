@@ -40,5 +40,14 @@ esp_err_t esp32_manager_init()
         return ESP_FAIL;
     }
 
+    // Initialize MQTT
+    e = esp32_manager_mqtt_init();
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "MQTT initialized");
+    } else {
+        ESP_LOGE(TAG, "Error initializing MQTT");
+        return ESP_FAIL;
+    }
+
     return ESP_OK;
 }

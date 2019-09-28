@@ -15,6 +15,7 @@
 #include "esp32_manager_storage.h"
 #include "esp32_manager_network.h"
 #include "esp32_manager_webconfig.h"
+#include "esp32_manager_mqtt.h"
 
 #ifdef __cplusplus
 extern "C" {
