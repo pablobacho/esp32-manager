@@ -96,7 +96,7 @@ esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, es
     uint8_t i;
 
     // Check if entry is already registered
-    for(i = 0; i < namespace->entries_size; ++i) {
+    for(i = 0; i < namespace->size; ++i) {
         if(namespace->entries[i] == entry) {
             ESP_LOGE(TAG, "Entry %s already registered", entry->key);
             return ESP_ERR_INVALID_STATE;
@@ -104,7 +104,7 @@ esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, es
     }
 
     // Register entry
-    for(i=0; i < namespace->entries_size; ++i) {
+    for(i=0; i < namespace->size; ++i) {
         if(namespace->entries[i] == NULL) {
             namespace->entries[i] = entry;
             ESP_LOGD(TAG, "Entry %s.%s registered", namespace->key, entry->key);
@@ -128,7 +128,7 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace)
         return ESP_ERR_INVALID_ARG;
     }
 
-    for(uint16_t i=0; i < namespace->entries_size; ++i) {
+    for(uint16_t i=0; i < namespace->size; ++i) {
         esp32_manager_entry_t * entry = namespace->entries[i];
         switch(entry->type) {
             case i8:
@@ -212,7 +212,7 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
         return ESP_ERR_INVALID_ARG;
     }
 
-    for(uint16_t i=0; i < namespace->entries_size; ++i) {
+    for(uint16_t i=0; i < namespace->size; ++i) {
         esp32_manager_entry_t * entry = namespace->entries[i];
         switch(entry->type) {
             case i8:

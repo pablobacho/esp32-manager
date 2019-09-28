@@ -23,7 +23,7 @@ esp32_manager_namespace_t esp32_manager_network_namespace = {
     .key = ESP32_MANAGER_NETWORK_NAMESPACE_KEY,
     .friendly = ESP32_MANAGER_NETWORK_NAMESPACE_FRIENDLY,
     .entries = esp32_manager_network_entries,
-    .entries_size = ESP32_MANAGER_NETWORK_ENTRIES_SIZE
+    .size = ESP32_MANAGER_NETWORK_ENTRIES_SIZE
 };
 
 esp32_manager_entry_t esp32_manager_network_entry_hostname = {

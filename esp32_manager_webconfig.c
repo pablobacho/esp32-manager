@@ -242,7 +242,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 ESP_LOGD(TAG, "Selected namespace %s", namespace->key);
                 // Check if there are settings to update
                 uint16_t entry_updated = 0; // Flag to mark if any settings were changed
-                for(uint16_t i=0; i < namespace->entries_size; ++i) {
+                for(uint16_t i=0; i < namespace->size; ++i) {
                     esp32_manager_entry_t * entry = namespace->entries[i];
                     char encoded[100]; // FIXME Magic number
                     ESP_LOGD(TAG, "Searching for entry %s.%s", namespace->key, entry->key);
@@ -355,7 +355,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_get(httpd_req_t * req)
             if(namespace != NULL) {
                 e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_ENTRY, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
                 esp32_manager_entry_t * entry = NULL;
-                for(uint8_t i=0; i < namespace->entries_size; ++i) {
+                for(uint8_t i=0; i < namespace->size; ++i) {
                     if(!strcmp(esp32_manager_webconfig_buffer, namespace->entries[i]->key)) {
                         entry = namespace->entries[i];
                         break;
@@ -484,7 +484,7 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
     strcat(buffer, namespace->key);
     strcat(buffer, "\"><br/>");
     
-    for(uint16_t i=0; i < namespace->entries_size; ++i) {
+    for(uint16_t i=0; i < namespace->size; ++i) {
         if(namespace->entries[i] == NULL) continue;
 
         esp32_manager_entry_t * entry = namespace->entries[i];

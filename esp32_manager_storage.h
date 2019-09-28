@@ -51,11 +51,10 @@ typedef struct {
  * Namespace handle.
  */
 typedef struct {
-    uint8_t id;             /*!< Namespace id. Should be the same as position in the namespace array. */
     const char * key;       /*!< Namespace key */
     const char * friendly;  /*!< Namespace friendly or human-readable name */
     esp32_manager_entry_t ** entries;
-    uint8_t entries_size;
+    uint8_t size;
     nvs_handle nvs_handle;  /*!< NVS handle for this namespace */
 } esp32_manager_namespace_t;
 
