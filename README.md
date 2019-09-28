@@ -4,9 +4,9 @@
 
 ## Features
 
-- **settings_manager** simplifies reading from and writing to flash using NVS for any variable in your application. Just register any variable with settings_manager and you will get simple read and write functions for NVS.
-- **network_manager** manages WiFi connection to networks or creation of APs.
-- **webconfig_manager** creates a web interface to configure any setting in your application registered with *settings_manager*.
+- Simplifies reading from and writing to flash using NVS for any variable in your application. Just register any variable with esp32_manager and you will get simple read and write functions for NVS.
+- Easy WiFi connection to networks or creation of APs. Automatic AP creation for WiFi configuration.
+- Creates a web interface to configure any setting in your application registered with *esp32_manager*.
 
 ## Usage
 
@@ -16,102 +16,104 @@ This is an ESP-IDF component. To include it in your project, you can clone this 
 
     git clone https://github.com/pablobacho/esp32-manager.git
 
-Include `settings_manager.h`, `network_manager.h` and `webconfig_manager.h` as needed in your source files to use it.
+Include `esp32_manager.h` in your source files to use it.
 
-    #include "settings_manager.h"
-    #include "network_manager.h"
-    #include "webconfig_manager.h"
+    #include "esp32_manager.h"
 
 ### Initialization
 
-Initialize components using these functions.
+Initialize the component using this function.
 
-    settings_manager_init();
-    network_manager_init();
-    webconfig_manager_init();
+    esp32_manager_init();
 
-`network_manager_init()`depends on `settings_manager`to be initialized. Likewise, `webconfig_manager_init()` depends on both `settings_manager` and `network_manager` to be initialized.
+### Entry registration
 
-### Namespaces
+*Entry* is any variable in your application managed by `esp32_manager`. For a variable to become a valid entry it needs to be registered with `esp32_manager`. Entries are grouped into *namespaces* for easier modularization.
 
-Settings are grouped into *namespaces*. To register a namespace use:
+For example, we got this two variables that we want to manage using `esp32_manager`:
 
-    settings_manager_handle_t settings_handle = settings_manager_register_namespace("my_settings");
+    int16_t counter = 0;
+    uint32_t delay = 1000;
 
-Where `settings_handle` is a pointer to the namespace handle that will be created, and `"my_settings"` the name of the namespace.
+First, let's create their entries:
 
-### Settings entries
+    esp32_manager_entry_t counter_entry = {
+        .key = "counter",                       // a keyword to identify this entry
+        .friendly = "Counter",                  // a human-readable name for the web configuration interface
+        .type = i32,                            // type of the variable (check `esp32_manager_storage.h` for other options)
+        .value = (void *) &counter,             // address of the variable casted to `void *`
+        .attributes = ESP32_MANAGER_ATTR_READ   // attributes (check `esp32_manager_storage.h` for other options)
+    };
 
-Settings are regular variables that exist in your program. To use them with `settings_manager` you need to register them under a namespace:
+    esp32_manager_entry_t delay_entry = {
+        .key = "delay",
+        .friendly = "Delay",
+        .type = u32,
+        .value = (void *) &delay,
+        .attributes = ESP32_MANAGER_ATTR_READWRITE
+    };
 
-    uint32_t timeout = 1280u;
-    settings_manager_register_setting(settings_handle, "timeout", u32, (void *) &timeout, SETTINGS_MANAGER_ATTR_READWRITE);
+Create an array big enough to group these entries:
 
-Where:
-- `uint32_t timeout` is the variable to be registered. In this example its value is 1280.
-- `settings_handle` is the namespace handle created earlier.
-- `"timeout"` is the key by which the setting will be identified. The key needs to be unique inside a namespace.
-- `u32` is the type of the setting to register. Check out `settings_manager.h` for the complete list of types.
-- `(void *) &timeout` is the address to the variable as a pointer to `void`.
-- And `SETTINGS_MANAGER_ATTR_READWRITE` are the attributes assigned to the setting. Check out `settings_manager.h` for the complete list of attributes.
+    esp32_manager_entry_t * example_entries[2];
 
-To write or read a setting, just use the referenced variable in your program. In the example above this is the variable `timeout`.
+Create the namespace these entries belong to:
+
+    esp32_manager_namespace_t example_namespace = {
+        .key = "example_ns",                // a keyword to identify this entry
+        .friendly = "Example Namespace",    // a human-readable name for the web configuration interface
+        .entries = example_entries,         // the array of pointers to entries previously created
+        .entries_size = 2                   // number of entries in the array
+    };
+
+After calling `esp32_init()`, register the namespace:
+
+    esp32_manager_register_namespace(&example_namespace);
+
+And then register the entries:
+
+    esp32_manager_register_entry(&example_namespace, &counter_entry);
+    esp32_manager_register_entry(&example_namespace, &delay_entry);
+
+This will create a webpage under the url `http://[device_ip]/setup` that will list all registered namespaces. Clicking on a namespace, will open up a form with current values of the entries registered in that namespace. You can modify the values and submit the forms to update them.
+
+You can also get raw values by doing HTTP GET requests to the url `http://[device_ip]/get?namespace=[namespace_key]&entry=[entry_key]
 
 ### Load from and save to NVS (Flash)
 
-To load settings from NVS:
+Typically, after registering the entries your application will want to load their values stored in flash (if available):
 
-    settings_manager_read_from_nvs(settings_handle);
+    esp32_manager_read_from_nvs(&example_namespace);
 
-This function will try to find all settings registered under this namespace in NVS, and load their values. Namespace and settings need to be registered before calling this function. This function overwrites settings' values with the contents read from NVS.
+This function will try to find all settings registered under this namespace in NVS, and load their values. Namespace and settings need to be registered before calling this function. This function overwrites entries' values with the contents read from NVS.
 
-To save settings to NVS:
+If your application changes the values of the variables associated to entries, call this function to save them to NVS:
 
-    settings_manager_commit_to_nvs(settings_handle);
+    esp32_manager_commit_to_nvs(&example_namespace);
 
 This function saves all settings of a given namespace in NVS. It overwrites any previous value present in flash for the same settings.
 
+When submiting values via web configuration forms, changes are always commited to NVS.
+
 ### Networking
 
-The module `network_manager` helps managing WiFi connections.
+`esp32_manager` will also help you configuring your WiFi connection.
 
-Initialize `network_manager` with:
+First, there is a namespace registered for networking, called `network`. This namespace has network settings entries registered under it, such as *SSID* and *password* of the WiFi network to connect to.
 
-    network_manager_init();
+Using `esp32_manager_network_wifi_start(AUTO)` will first check the contents of the `network.ssid` entry.
 
-This function registers the namespace `network` with the `settings_manager` and some of its settings, such as `ssid` and `password` of a WiFi network.
+- If it is empty, then an Access-Point (AP) will be created. You can connect to this access point using the default ssid `wifi-manager` and password `12345678`. These values can be changed in `esp32_manager_network.h`. After connecting to the AP, open a browser and go to `192.168.4.1` to configure WiFi.
+- If it is not empty, it will try to connect to a WiFi with that SSID, and it will keep trying to connect to it until it successes.
 
-After initialization, start WiFi using:
+You can also specify on what mode you want WiFi to start replacing AUTO by STA or AP:
 
-    network_manager_wifi_start(mode);
-
-Where `mode` can be any of the following:
-
-- `STA` or *station mode*: Will try to connect to a WiFi network with SSID and passwords already known. It uses the variables `network_manager_ssid` and `network_manager_password` to connect to a known WiFi network. These are intended to be populated from NVS by the `settings_manager` module or configured through the web interface using `webconfig_manager`.
-- `AP` or *AP mode*: Creates an AP (access point) a 3rd device can connect to, such as a smartphone or computer. This is useful if there is no WiFi infrastructure deployed or its configuration has not been done.
+- `STA` or *station mode*: Will try to connect to a WiFi network with SSID and passwords already known.
+- `AP` or *AP mode*: Creates an AP (access point) a 3rd device can connect to, such as a smartphone or computer.
 - `AUTO`: Auto will check whether there is a known SSID to connect to, and start in `STA` mode if there is, or `AP` if there is not.
 
-### Webconfig
 
-Initialize `webconfig_manager` using:
-
-    webconfig_manager_init();
-
-After initialization, `webconfig_manager` will listen to events from `network_manager` starting and stopping a webserver automatically as the device obtains an IP address, disconnects, creates an AP or other events.
-
-After successfully connecting to a WiFi network or creating an AP, the webserver is accessible through the device's IP address. In AP mode, the device IP address is 192.168.4.1. In station mode, check your router tools to find it.
-
-#### Configuration using a web browser
-
-For readability the following information use the access point IP address.
-
-Browsing to `http://192.168.4.1/` will take you to the homepage. It will show youa title and a link to the setup page. This page is intended to show some information on the device, but it has not been implemented yet.
-
-Clicking the link *Setup* or pointing a browser to `http://192.168.4.1/setup` will show you a list of namespaces registered with `settings_manager`.
-
-Clicking one of the namespaces will allow you to edit its settings. Click *Save* to update them.
-
-#### Scripting or software from a remote machine
+### Accessing programmatically from a remote machine
 
 All same operations can be perform programmatically from another machine connected to the same network via HTTP GET methods.
 
@@ -132,10 +134,11 @@ There is a `get` uri that allows retrieving raw values from settings. The follow
 A typical workflow could be:
 
 1. Device is booting for the first time.
-2. Initialize components.
-3. Start WiFi in AUTO mode. Being the first time, there is no SSID registered to connect to, so it will create an access point and wait for the user to connect to it.
-4. Using a web browser, user connects to AP and configures WiFi using *webconfig*. After saving configuration, click *reboot*.
-5. Device reboots, initializes components and, again, starts in AUTO mode. This time there is an SSID and a password stored, so it will go to STA mode and try to connect to the given WiFi network.
+2. Initialize `esp32_manager` component.
+3. Register namespaces and entries.
+4. Start WiFi in AUTO mode. Being the first time, there is no SSID registered to connect to, so it will create an access point and wait for the user to connect to it.
+5. Using a web browser, user connects to AP and configures WiFi using the web configuration interface. After saving configuration, click *reboot*.
+6. Device reboots, initializes components and, again, starts in AUTO mode. This time there is an SSID and a password stored, so it will go to STA mode and try to connect to the given WiFi network.
 
 ## Roadmap
 
@@ -143,8 +146,8 @@ I am building this component for a project I currently have, and I will be addin
 
 - Not all types are implemented. In particular, support for types such as *multiple choice*, *single choice* and *images* is not implemented.
 - A network scanner to configure WiFi instead of entering the information manually.
-- Using [PREACT](https://preactjs.com/) to create a rich web interface. As of today the UI is plain HTML with no styling.
-- Allowing alternative methods to get/set settings. Thinking of MQTT support.
+- The UI uses the Milligram framework for styling, but some lightweight JS framework would give it a much richer interface.
+- Allowing alternative methods to get/set settings. I am currently working on MQTT support.
 
 ## Contributing
 

@@ -3,7 +3,7 @@
 #
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 
-COMPONENT_SRCDIRS := . ./src
+COMPONENT_SRCDIRS := .
 COMPONENT_ADD_INCLUDEDIRS := . ./include
 
-COMPONENT_EMBED_FILES := res/style.min.css
+COMPONENT_EMBED_FILES := files/style.min.css
