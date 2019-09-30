@@ -106,17 +106,154 @@ esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, es
     // Register entry
     for(i=0; i < namespace->size; ++i) {
         if(namespace->entries[i] == NULL) {
+            // Assign default from_string and to_string methods
+            if(entry->from_string == NULL) {
+                ESP_LOGW(TAG, "'from_string' method not found for entry %s.%s. Assigning default.", namespace->key, entry->key);
+                entry->from_string = &esp32_manager_entry_from_string_default;
+            }
+            if(entry->to_string == NULL) {
+                ESP_LOGW(TAG, "'to_string' method not found for entry %s.%s. Assigning default.", namespace->key, entry->key);
+                entry->to_string = &esp32_manager_entry_to_string_default;
+            }
+            // Add entry to namespace
             namespace->entries[i] = entry;
             ESP_LOGD(TAG, "Entry %s.%s registered", namespace->key, entry->key);
             return ESP_OK;
         }
     }
-    if(i >= ESP32_MANAGER_NAMESPACES_SIZE) {
+    if(i >= ESP32_MANAGER_NAMESPACES_SIZE) { // The loop ended without registering entry
         ESP_LOGE(TAG, "Not enough memory to register entry %s.%s", namespace->key, entry->key);
         return ESP_ERR_NO_MEM;
     }
 
     return ESP_FAIL;
+}
+
+esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, char * dest)
+{
+    if(entry == NULL || dest == NULL) {
+        ESP_LOGE(TAG, "entry and source cannot be NULL" );
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    switch(entry->type) {
+        case i8:
+            sprintf(dest, "%d", (signed int) *((int8_t *) entry->value));
+        break;
+        case u8:
+            sprintf(dest, "%u", (unsigned int) *((uint8_t *) entry->value));
+        break;
+        case i16:
+            sprintf(dest, "%d", (signed int) *((int16_t *) entry->value));
+        break;
+        case u16:
+            sprintf(dest, "%u", (unsigned int) *((uint16_t *) entry->value));
+        break;
+        case i32:
+            sprintf(dest, "%d", (signed int) *((int32_t *) entry->value));
+        break;
+        case u32:
+            sprintf(dest, "%u", (unsigned int) *((uint32_t *) entry->value));
+        break;
+        case i64:
+            sprintf(dest, "%ld", (signed long int) *((int64_t *) entry->value));
+        break;
+        case u64:
+            sprintf(dest, "%lu", (unsigned long int) *((uint64_t *) entry->value));
+        break;
+        case flt:
+            sprintf(dest, "%f", (float) *((float *) entry->value));
+        break;
+        case dbl:
+            sprintf(dest, "%lf", (double) *((double *) entry->value));
+        break;
+        case text:
+        case password:
+            strcpy(dest, (char *) entry->value);
+        break;
+        case single_choice:
+        case multiple_choice:
+        case blob:
+        case image:
+            ESP_LOGE(TAG, "Not implemented yet");
+            return ESP_FAIL;
+        break;
+        default:
+            ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
+            return ESP_FAIL;
+        break;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry, char * source)
+{
+    if(entry == NULL || source == NULL) {
+        ESP_LOGE(TAG, "entry and source cannot be NULL");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint64_t unumber;
+    int64_t inumber;
+
+    switch(entry->type) {
+        case i8:
+            inumber = atoi(source);
+            *((int8_t *) entry->value) = (int8_t) inumber;
+            break;
+        case i16:
+            inumber = atoi(source);
+            *((int16_t *) entry->value) = (int16_t) inumber;
+            break;
+        case i32:
+            inumber = atoi(source);
+            *((int32_t *) entry->value) = (int32_t) inumber;
+            break;
+        case i64:
+            inumber = atoi(source);
+            *((int64_t *) entry->value) = (int64_t) inumber;
+            break;
+        case u8:
+            unumber = atoi(source);
+            *((uint8_t *) entry->value) = (uint8_t) unumber;
+            break;
+        case u16:
+            unumber = atoi(source);
+            *((uint16_t *) entry->value) = (uint16_t) unumber;
+            break;
+        case u32:
+            unumber = atoi(source);
+            *((uint32_t *) entry->value) = (uint32_t) unumber;
+            break;
+        case u64:
+            unumber = atoi(source);
+            *((uint64_t *) entry->value) = (uint64_t) unumber;
+            break;
+        case text: // This type needs to be null-terminated
+            strcpy((char *) entry->value, source);
+            break;
+        case password:
+            strcpy((char *) entry->value, source);
+            break;
+        // TODO Implement these cases
+        case flt:
+        case dbl:
+        case single_choice:
+        case multiple_choice:
+        case blob: // Data structures, binary and other non-null-terminated types go here
+        case image:
+            ESP_LOGE(TAG, "Not implemented");
+            return ESP_FAIL;
+            //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
+        break;
+        default:
+            ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
+            return ESP_FAIL;
+        break;
+    }
+
+    return ESP_OK;
 }
 
 esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace)
@@ -293,6 +430,7 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
 
 esp_err_t esp32_manager_entry_to_string(char * dest, esp32_manager_entry_t * entry)
 {
+    ESP_LOGW(TAG, "Deprecated: esp32_manager_entry_to_string() - Use entry->to_string() instead.");
     if(entry == NULL || dest == NULL) {
         ESP_LOGE(TAG, "Invalid arguments");
         return ESP_ERR_INVALID_ARG;

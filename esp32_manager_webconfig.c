@@ -251,12 +251,20 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                         ESP_LOGD(TAG, "Value before decoding: %s", encoded);
                         esp32_manager_webconfig_urldecode(esp32_manager_webconfig_buffer, encoded); // Decode value from URL
                         ESP_LOGD(TAG, "Value after decoding: %s", esp32_manager_webconfig_buffer);
-                        esp32_manager_webconfig_update_namespace_entry(entry, esp32_manager_webconfig_buffer);
-                        ++entry_updated;
-                        esp32_manager_entry_to_string(encoded, entry);
-                        ESP_LOGD(TAG, "Updated entry %s.%s with value %s", namespace->key, entry->key, encoded);
+                        e = entry->from_string(entry, esp32_manager_webconfig_buffer);
+                        if(e == ESP_OK) {
+                            ESP_LOGD(TAG, "Entry %s.%s updated to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
+                            ++entry_updated;
+                        } else {
+                            ESP_LOGE(TAG, "Error updating entry %s.%s to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
+                        }
+                        e = entry->to_string(entry, encoded);
+                        if(e == ESP_OK) {
+                            ESP_LOGD(TAG, "Entry %s.%s content %s", namespace->key, entry->key, encoded);
+                        } else {
+                            ESP_LOGE(TAG, "Error converting entry %s.%s to string", namespace->key, entry->key);
+                        }
                     } // Nothing to do if setting is not found in query string
-                    
                 }
                 if(entry_updated > 0) {
                     e = esp32_manager_commit_to_nvs(namespace); // Commit changes to namespace
@@ -364,7 +372,14 @@ esp_err_t esp32_manager_webconfig_uri_handler_get(httpd_req_t * req)
                 // if requested entry exists
                 if(entry != NULL) {
                     // Print raw value on response buffer
-                    esp32_manager_entry_to_string(esp32_manager_webconfig_buffer, entry);
+                    e = entry->to_string(entry, esp32_manager_webconfig_buffer);
+                    if(e == ESP_OK) {
+                        ESP_LOGD(TAG, "Entry %s.%s converted to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
+                    } else {
+                        ESP_LOGE(TAG, "Error converting entry %s.%s to string", namespace->key, entry->key);
+                        strcpy(esp32_manager_webconfig_buffer, "Error: invalid format");
+                        httpd_resp_set_status(req, HTTPD_500);
+                    }
                     ESP_LOGD(TAG, "Response content: %s", esp32_manager_webconfig_buffer);                 
                 } else {
                     ESP_LOGE(TAG, "Requested namespace does not exist");
@@ -491,7 +506,6 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
         char value[50]; // FIXME Remove this magic number
         strcat(buffer, entry->friendly);
         strcat(buffer, "<br/><input type=\"");
-
         switch(entry->type) {
             case i8:
             case i16:
@@ -504,16 +518,12 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
             case flt:
             case dbl:
                 strcat(buffer, "number\" value=\"");
-                esp32_manager_entry_to_string(value, entry);
-                strcat(buffer, value);
                 break;
             case text: // This type needs to be null-terminated
                 strcat(buffer, "text\" value=\"");
-                strcat(buffer, (char *) entry->value);
                 break;
             case password:
                 strcat(buffer, "password\" value=\"");
-                strcat(buffer, (char *) entry->value);
                 break;
             // TODO Implement these cases
             case single_choice:
@@ -527,9 +537,15 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
                 ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", namespace->key, entry->key);
             break;
         }
+        entry->to_string(entry, value);
+        strcat(buffer, value);
         strcat(buffer, "\" name=\"");
         strcat(buffer, entry->key);
-        strcat(buffer, "\"/><br/>");
+        strcat(buffer, "\"");
+        if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
+            strcat(buffer, " readonly");
+        }
+        strcat(buffer,"/><br/>");
     }
 
     strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a href=\"/setup\">Back</a></body></html>");
@@ -539,6 +555,7 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
 
 esp_err_t esp32_manager_webconfig_update_namespace_entry(esp32_manager_entry_t * entry, const char * value_str)
 {
+    ESP_LOGW(TAG, "Deprecated: esp32_manager_webconfig_update_namespace_entry() - Use entry->from_string() instead.");
     if(entry == NULL || value_str == NULL) {
         ESP_LOGE(TAG, "entry and value_str cannot be NULL");
         return ESP_ERR_INVALID_ARG;

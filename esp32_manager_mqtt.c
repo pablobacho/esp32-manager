@@ -85,12 +85,8 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
     strcat(topic, "/");
     strcat(topic, entry->key);
     
-    ESP_LOGD(TAG, "Topic %s", topic);
-
-    char value_str[10];
-    esp32_manager_entry_to_string(value_str, entry);
-
-    ESP_LOGD(TAG, "Content %s", value_str);
+    char value_str[10]; // FIXME Magic number
+    entry->to_string(entry, value_str);
 
     int msg_id = esp_mqtt_client_publish(esp32_manager_mqtt_client, topic, value_str, strlen(value_str), 0, false);
     ESP_LOGD(TAG, "Publish msg %d with topic %s and content %s", msg_id, topic, value_str);
@@ -99,10 +95,7 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
 }
 
 esp_err_t esp32_manager_mqtt_event_handler(esp_mqtt_event_handle_t event)
-{
-    esp_mqtt_client_handle_t client = event->client;
-    int msg_id;
-    
+{    
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");

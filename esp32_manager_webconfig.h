@@ -1,7 +1,5 @@
 /**
- * esp32_manager_webconfig.h - ESP-IDF component to work with web configuration
- * 
- * Include this header file to use the component.
+ * esp32_manager_webconfig.h
  * 
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.

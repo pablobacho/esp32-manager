@@ -38,13 +38,15 @@ typedef enum {i8=0, u8=1, i16=2, u16=3, i32=4, u32=5, i64=6, u64=7, flt=8, dbl=9
 /**
  * Settings entry
  */
-typedef struct {
+typedef struct esp32_manager_entry {
     const char * key;               /*!< unique key to identify the entry */
     const char * friendly;          /*!< Friendly or human-readable name */
     esp32_manager_type_t type;      /*!< type */
     void * value;                   /*!< pointer to the variable where the value of the setting is stored */
     void * default_value;           /*!< Default value */
     uint32_t attributes;            /*!< attributes */
+    esp_err_t (* from_string)(struct esp32_manager_entry *, char *);  /*!< function to read value from string */
+    esp_err_t (* to_string)(struct esp32_manager_entry *, char *);    /*!< function to write value to string */
 } esp32_manager_entry_t;
 
 /**
@@ -93,6 +95,9 @@ esp_err_t esp32_manager_register_namespace(esp32_manager_namespace_t * namespace
  *          ESP_ERR_INVALID_ARG namespace or entry pointers are not valid
  */
 esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, esp32_manager_entry_t * entry);
+
+esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, char * dest);
+esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry, char * source);
 
 /**
  * @brief   Commits all esp32 under a namespace to NVS for permanent storage
