@@ -503,49 +503,11 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
         if(namespace->entries[i] == NULL) continue;
 
         esp32_manager_entry_t * entry = namespace->entries[i];
-        char value[50]; // FIXME Remove this magic number
-        strcat(buffer, entry->friendly);
-        strcat(buffer, "<br/><input type=\"");
-        switch(entry->type) {
-            case i8:
-            case i16:
-            case i32:
-            case i64:
-            case u8:
-            case u16:
-            case u32:
-            case u64:
-            case flt:
-            case dbl:
-                strcat(buffer, "number\" value=\"");
-                break;
-            case text: // This type needs to be null-terminated
-                strcat(buffer, "text\" value=\"");
-                break;
-            case password:
-                strcat(buffer, "password\" value=\"");
-                break;
-            // TODO Implement these cases
-            case single_choice:
-            case multiple_choice:
-            case blob: // Data structures, binary and other non-null-terminated types go here
-            case image:
-                ESP_LOGE(TAG, "Not implemented");
-                //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
-            break;
-            default:
-                ESP_LOGE(TAG, "Entry %s.%s is of an unknown type", namespace->key, entry->key);
-            break;
+        if(entry->html_form_widget != NULL) {
+            entry->html_form_widget(entry, &buffer[strlen(buffer)]);
+        } else {
+            esp32_manager_webconfig_html_form_widget_default(entry, &buffer[strlen(buffer)]);
         }
-        entry->to_string(entry, value);
-        strcat(buffer, value);
-        strcat(buffer, "\" name=\"");
-        strcat(buffer, entry->key);
-        strcat(buffer, "\"");
-        if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
-            strcat(buffer, " readonly");
-        }
-        strcat(buffer,"/><br/>");
     }
 
     strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a href=\"/setup\">Back</a></body></html>");
@@ -553,59 +515,69 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
     return ESP_OK;
 }
 
-esp_err_t esp32_manager_webconfig_update_namespace_entry(esp32_manager_entry_t * entry, const char * value_str)
+esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t * entry, char * dest)
 {
-    ESP_LOGW(TAG, "Deprecated: esp32_manager_webconfig_update_namespace_entry() - Use entry->from_string() instead.");
-    if(entry == NULL || value_str == NULL) {
-        ESP_LOGE(TAG, "entry and value_str cannot be NULL");
-        return ESP_ERR_INVALID_ARG;
-    }
-
-    uint64_t unumber;
-    int64_t inumber;
+    strcpy(dest, "<div>");
+    strcat(dest, entry->friendly);
+    strcat(dest, "<br/>");
 
     switch(entry->type) {
         case i8:
-            inumber = atoi(value_str);
-            *((int8_t *) entry->value) = (int8_t) inumber;
-            break;
         case i16:
-            inumber = atoi(value_str);
-            *((int16_t *) entry->value) = (int16_t) inumber;
-            break;
         case i32:
-            inumber = atoi(value_str);
-            *((int32_t *) entry->value) = (int32_t) inumber;
-            break;
         case i64:
-            inumber = atoi(value_str);
-            *((int64_t *) entry->value) = (int64_t) inumber;
-            break;
         case u8:
-            unumber = atoi(value_str);
-            *((uint8_t *) entry->value) = (uint8_t) unumber;
-            break;
         case u16:
-            unumber = atoi(value_str);
-            *((uint16_t *) entry->value) = (uint16_t) unumber;
-            break;
         case u32:
-            unumber = atoi(value_str);
-            *((uint32_t *) entry->value) = (uint32_t) unumber;
-            break;
         case u64:
-            unumber = atoi(value_str);
-            *((uint64_t *) entry->value) = (uint64_t) unumber;
-            break;
-        case text: // This type needs to be null-terminated
-            strcpy((char *) entry->value, value_str);
-            break;
-        case password:
-            strcpy((char *) entry->value, value_str);
-            break;
-        // TODO Implement these cases
         case flt:
         case dbl:
+            // <input type="number" name="[entry.key]" value="[entry.value]" />
+            strcat(dest, "<input type=\"number\" name=\"");
+            strcat(dest, entry->key);   
+            strcat(dest, "\" value=\"");
+            uint16_t len = strlen(dest); 
+            entry->to_string(entry, &dest[len]);
+            strcat(dest, "\"");
+            if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
+                strcat(dest, "disabled");
+            }
+            strcat(dest, " />");
+            break;
+        case text: // This type needs to be null-terminated
+            strcat(dest, "<input type=\"text\" name=\"");
+            strcat(dest, entry->key);   
+            strcat(dest, "\" value=\"");
+            strcat(dest, (char *) entry->value);
+            strcat(dest, "\"");
+            if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
+                strcat(dest, "readonly");
+            }
+            strcat(dest, " />");
+            break;
+        case wifi_ssid:
+            strcat(dest, "<input type=\"text\" name=\"");
+            strcat(dest, entry->key);   
+            strcat(dest, "\" value=\"");
+            strcat(dest, (char *) entry->value);
+            strcat(dest, "\"");
+            if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
+                strcat(dest, "readonly");
+            }
+            strcat(dest, " maxlength=\"32\" />");
+            break;
+        case password:
+            strcat(dest, "<input type=\"password\" name=\"");
+            strcat(dest, entry->key);   
+            strcat(dest, "\" value=\"");
+            strcat(dest, (char *) entry->value);
+            strcat(dest, "\"");
+            if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
+                strcat(dest, "readonly");
+            }
+            strcat(dest, " />");
+            break;
+        // TODO Implement these cases
         case single_choice:
         case multiple_choice:
         case blob: // Data structures, binary and other non-null-terminated types go here
@@ -615,11 +587,11 @@ esp_err_t esp32_manager_webconfig_update_namespace_entry(esp32_manager_entry_t *
         break;
         default:
             ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
-            return ESP_FAIL;
         break;
-    }
+        }
+        strcat(dest, "</div>");
 
-    return ESP_OK;
+        return ESP_OK;
 }
 
 int32_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src)
@@ -632,7 +604,7 @@ int32_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *_
 		c = *src++;
 		if (c == '+') { // Replace '+' with spaces ' '
             c = ' ';
-        } else if (c == '%' && (!WEBCONFIG_MANAGER_ISHEX(*src++) || !WEBCONFIG_MANAGER_ISHEX(*src++) || !sscanf(src - 2, "%2x", &c))) {
+        } else if (c == '%' && (!ISHEX(*src++) || !ISHEX(*src++) || !sscanf(src - 2, "%2x", &c))) {
             // If found a %, next two characters need to be hexadecimal. Read both as a character value. If not they are not, throw an error.
 			return -1;
         }

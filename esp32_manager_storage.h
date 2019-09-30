@@ -30,10 +30,14 @@ extern "C" {
 /**
  * Settings type.
  */
-typedef enum {i8=0, u8=1, i16=2, u16=3, i32=4, u32=5, i64=6, u64=7, flt=8, dbl=9,
-        multiple_choice=20, single_choice=21,
-        text=40, password=41,
-        blob=60, image=61} esp32_manager_type_t;
+typedef enum {
+    i8, u8, i16, u16, i32, u32, i64, u64, flt, dbl,
+    multiple_choice, single_choice,
+    text, password, wifi_ssid,
+    blob, image
+} esp32_manager_type_t;
+
+#define ESP32_MANAGER_TYPE_WIFI_SSID_MAX_LENGTH     32
 
 /**
  * Settings entry
@@ -47,6 +51,7 @@ typedef struct esp32_manager_entry {
     uint32_t attributes;            /*!< attributes */
     esp_err_t (* from_string)(struct esp32_manager_entry *, char *);  /*!< function to read value from string */
     esp_err_t (* to_string)(struct esp32_manager_entry *, char *);    /*!< function to write value to string */
+    esp_err_t (* html_form_widget)(struct esp32_manager_entry *, char *);   /*!< funtion to generate html form field/widget */
 } esp32_manager_entry_t;
 
 /**
@@ -96,7 +101,24 @@ esp_err_t esp32_manager_register_namespace(esp32_manager_namespace_t * namespace
  */
 esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, esp32_manager_entry_t * entry);
 
+/**
+ * @brief   Default method for converting entry value to string
+ * 
+ * @param   entry Pointer to entry
+ * @param   dest Output buffer
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
 esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, char * dest);
+
+/**
+ * @brief   Default method for converting string into entry value
+ * 
+ * @param   entry Pointer to entry
+ * @param   source Input string
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
 esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry, char * source);
 
 /**
@@ -120,15 +142,19 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace);
 esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace);
 
 /**
- * @brief   Convert a setting value to string
- * 
- * @param   dest Destination buffer
- * @param   entry pointer to the esp32 entry
- * @return  ESP_OK success
- *          ESP_FAIL error
- *          ESP_ERR_INVALID_ARG for invalid arguments
+ * Checks whether a character x is a hexadecimal digit or not.
  */
-esp_err_t esp32_manager_entry_to_string(char * dest, esp32_manager_entry_t * entry);
+#define ISHEX(x) ((x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F'))
+
+/**
+ * Returns the minimum value of 2 given.
+ */
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
+/**
+ * Returns the maximum value of 2 given.
+ */
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #ifdef __cplusplus
 }

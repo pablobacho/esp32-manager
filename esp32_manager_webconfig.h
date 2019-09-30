@@ -162,15 +162,14 @@ esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req);
 esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_t * req, esp32_manager_namespace_t * namespace);
 
 /**
- * @brief   Gets new values for settings from the query string and updates them using esp32_manager
+ * @brief   Generates the right HTML form input code according to entry type
  * 
- * @param   entry Handle of the settings entry to be updated
- * @param   value_str The new value in string format as read from the query string
- * @return  ESP_OK: success
- *          ESP_ERR_INVALID_ARG: entry or value_str are not valid
- *          ESP_FAIL: error
+ * @param   entry Pointer to entry
+ * @param   dest Output buffer
+ * @return  ESP_OK success
+ *          ESP_FAIL error
  */
-esp_err_t esp32_manager_webconfig_update_namespace_entry(esp32_manager_entry_t * entry, const char * value_str);
+esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t * entry, char * dest);
 
 /**
  * @brief   Decode parameter value from an encoded URL query string
@@ -181,21 +180,6 @@ esp_err_t esp32_manager_webconfig_update_namespace_entry(esp32_manager_entry_t *
  *          -1 for error
  */
 int32_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src);
-
-/**
- * Checks whether a character x is a hexadecimal digit or not.
- */
-#define WEBCONFIG_MANAGER_ISHEX(x) ((x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F'))
-
-/**
- * Returns the minimum value of 2 given.
- */
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
-/**
- * Returns the maximum value of 2 given.
- */
-#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #ifdef __cplusplus
 }

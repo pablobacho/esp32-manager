@@ -169,6 +169,7 @@ esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, c
         break;
         case text:
         case password:
+        case wifi_ssid:
             strcpy(dest, (char *) entry->value);
         break;
         case single_choice:
@@ -235,6 +236,9 @@ esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry,
             break;
         case password:
             strcpy((char *) entry->value, source);
+            break;
+        case wifi_ssid:
+            strncpy((char *) entry->value, source, MIN(ESP32_MANAGER_TYPE_WIFI_SSID_MAX_LENGTH, strlen(source)));
             break;
         // TODO Implement these cases
         case flt:
@@ -423,66 +427,6 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
             }
             
         }
-    }
-
-    return ESP_OK;
-}
-
-esp_err_t esp32_manager_entry_to_string(char * dest, esp32_manager_entry_t * entry)
-{
-    ESP_LOGW(TAG, "Deprecated: esp32_manager_entry_to_string() - Use entry->to_string() instead.");
-    if(entry == NULL || dest == NULL) {
-        ESP_LOGE(TAG, "Invalid arguments");
-        return ESP_ERR_INVALID_ARG;
-    }
-
-    switch(entry->type) {
-        case i8:
-            sprintf(dest, "%d", (signed int) *((int8_t *) entry->value));
-        break;
-        case u8:
-            sprintf(dest, "%u", (unsigned int) *((uint8_t *) entry->value));
-        break;
-        case i16:
-            sprintf(dest, "%d", (signed int) *((int16_t *) entry->value));
-        break;
-        case u16:
-            sprintf(dest, "%u", (unsigned int) *((uint16_t *) entry->value));
-        break;
-        case i32:
-            sprintf(dest, "%d", (signed int) *((int32_t *) entry->value));
-        break;
-        case u32:
-            sprintf(dest, "%u", (unsigned int) *((uint32_t *) entry->value));
-        break;
-        case i64:
-            sprintf(dest, "%ld", (signed long int) *((int64_t *) entry->value));
-        break;
-        case u64:
-            sprintf(dest, "%lu", (unsigned long int) *((uint64_t *) entry->value));
-        break;
-        case flt:
-            sprintf(dest, "%f", (float) *((float *) entry->value));
-        break;
-        case dbl:
-            sprintf(dest, "%lf", (double) *((double *) entry->value));
-        break;
-        case text:
-        case password:
-            strcpy(dest, (char *) entry->value);
-        break;
-        case single_choice:
-        case multiple_choice:
-        case blob:
-        case image:
-            ESP_LOGE(TAG, "Not implemented yet");
-            return ESP_FAIL;
-            //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
-        break;
-        default:
-            ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
-            return ESP_FAIL;
-        break;
     }
 
     return ESP_OK;
