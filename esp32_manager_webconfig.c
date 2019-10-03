@@ -594,24 +594,30 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
         return ESP_OK;
 }
 
-int32_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src)
+esp_err_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src)
 {
-    char * index;
-	const char * end = src + strlen(src);
-	unsigned int c;
+    char * index_dest;
+    const char * index_src; // Pointers to work with both buffers
+	const char * end = src + strlen(src); // This pointer tells us when we reach the end of the source string
+	unsigned int c; // Temporari variable to work with individual chars
  
-	for (index = dest; src <= end; index++) {
-		c = *src++;
+    // Set index_dest and index_src to the origin of their respective strings (their 0th element)
+    // While index_src hasn't reached the end of the string
+    // At the end increment the position of index_dest
+	for (index_dest = dest, index_src = src; index_src <= end; index_dest++) {
+		c = *index_src++;   // Read the character in the current position and move pointer one element forward
 		if (c == '+') { // Replace '+' with spaces ' '
             c = ' ';
-        } else if (c == '%' && (!ISHEX(*src++) || !ISHEX(*src++) || !sscanf(src - 2, "%2x", &c))) {
-            // If found a %, next two characters need to be hexadecimal. Read both as a character value. If not they are not, throw an error.
-			return -1;
+        } else if (c == '%') { // If found a %
+            if(ISHEX(*(index_src)) && ISHEX(*(index_src +1))) { // Make sure the following 2 chars are hexadecimal digits
+                sscanf(index_src, "%2x", &c); // Turn that value into its ascii character
+                index_src += 2; // Move index_src to the next valid caracter of the string
+            } else {
+                return ESP_FAIL; // If % is not followed by 2 hexadecimal digits the source string is wrong
+            }
         }
- 		if (dest) {
-            *index = c; // Copy decoded char
-        }
+
+        *index_dest = c; // Whether it is the original character, or one converted from + or hex, copy it to the destination string
 	}
- 
-	return index - dest; // Return size of decoded string
+    return ESP_OK;
 }

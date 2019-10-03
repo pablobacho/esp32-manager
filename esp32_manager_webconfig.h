@@ -179,7 +179,7 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
  * @return  Size of the decoded string
  *          -1 for error
  */
-int32_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src);
+esp_err_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src);
 
 #ifdef __cplusplus
 }
