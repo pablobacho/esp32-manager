@@ -144,6 +144,16 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace);
 esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace);
 
 /**
+ * @brief   Erase all namespace content from NVS
+ * 
+ * @param   namespace pointer to the namespace
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ *          ESP_ERR_INVALID_ARG invalid handle
+ */
+esp_err_t esp32_manager_namespace_nvs_erase(esp32_manager_namespace_t * namespace);
+
+/**
  * @brief   Validate namespace pointer.
  * 
  *          Checks for null on:
@@ -166,13 +176,33 @@ esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace
  *          * key (also max length)
  *          * friendly name
  *          * value
- *          * default_value
+ *          Remaining fields are optional and they can be NULL
  * 
  * @param   entry pointer to entry
  * @return  ESP_OK valid
  *          ESP_FAIL error
  */
 esp_err_t esp32_manager_validate_entry(esp32_manager_entry_t * entry);
+
+/**
+ * @brief   Reset all entry values in a namespace to their defaults
+ * 
+ * @param   namespace pointer to the namespace
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ *          ESP_ERR_INVALID_ARG invalid handle
+ */
+esp_err_t esp32_manager_reset_namespace(esp32_manager_namespace_t * namespace);
+
+/**
+ * @brief   Reset entry value to default
+ * 
+ * @param   namespace pointer to the namespace
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ *          ESP_ERR_INVALID_ARG invalid handle
+ */
+esp_err_t esp32_manager_reset_entry(esp32_manager_entry_t * entry);
 
 /**
  * Checks whether a character x is a hexadecimal digit or not.

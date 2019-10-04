@@ -154,8 +154,6 @@ void esp32_manager_mqtt_system_event_handler(void * handler_arg, esp_event_base_
 
 esp_err_t esp32_manager_mqtt_entry_broker_url_from_string(esp32_manager_entry_t * entry, char * source)
 {
-    esp_err_t e;
-
     if(esp32_manager_validate_entry(entry) != ESP_OK) {
         ESP_LOGE(TAG, "Error: invalid entry");
         return ESP_ERR_INVALID_ARG;

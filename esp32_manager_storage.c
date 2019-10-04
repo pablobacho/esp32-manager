@@ -428,6 +428,25 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
     return ESP_OK;
 }
 
+esp_err_t esp32_manager_namespace_nvs_erase(esp32_manager_namespace_t * namespace)
+{
+    esp_err_t e;
+
+    if(esp32_manager_validate_namespace(namespace) != ESP_OK) {
+        ESP_LOGE(TAG, "Error: invalid argument");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    e = nvs_erase_all(namespace->nvs_handle);
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "Namespace %s erased from NVS", namespace->key);
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG, "Error erasing namespace %s from NVS: %s", namespace->key, esp_err_to_name(e));
+        return ESP_FAIL;
+    }
+}
+
 esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace)
 {
     if(namespace == NULL) {
@@ -461,34 +480,120 @@ esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace
 esp_err_t esp32_manager_validate_entry(esp32_manager_entry_t * entry)
 {
     if(entry == NULL) {
-        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null pointer");
+        ESP_LOGE(TAG, "Error validating entry: null pointer");
         return ESP_FAIL;
     }
 
     if(entry->key == NULL) {
-        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null key");
+        ESP_LOGE(TAG, "Error validating entry: null key");
         return ESP_FAIL;
     } else {
         if(strlen(entry->key) > ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH) {
-            ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: key is too long");
+            ESP_LOGE(TAG, "Error validating entry: key is too long");
             return ESP_FAIL;
         }
     }
 
     if(entry->friendly == NULL) {
-        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null friendly name");
+        ESP_LOGE(TAG, "Error validating entry: null friendly name");
         return ESP_FAIL;
     }
 
     if(entry->value == NULL) {
-        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null value");
+        ESP_LOGE(TAG, "Error validating entry: null value");
         return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_reset_namespace(esp32_manager_namespace_t * namespace)
+{
+    esp_err_t e;
+    uint8_t error_count = 0;
+
+    if(esp32_manager_validate_namespace(namespace) != ESP_OK) {
+        ESP_LOGE(TAG, "Error: invalid argument");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    for(uint8_t i=0; i < namespace->size; ++i) {
+        e = esp32_manager_reset_entry(namespace->entries[i]);
+        if(e == ESP_ERR_INVALID_ARG) {
+            ++error_count;
+        } else if(e == ESP_FAIL) {
+            ++error_count;
+        }
+    }
+
+    if(error_count > 0) {
+        ESP_LOGE(TAG, "Error resetting namespace %s. Some entries were not restored.", namespace->key);
+        return ESP_FAIL;
+    } else {
+        ESP_LOGD(TAG, "Namespace %s restored", namespace->key);
+        return ESP_OK;
+    }
+}
+
+esp_err_t esp32_manager_reset_entry(esp32_manager_entry_t * entry)
+{
+    if(esp32_manager_validate_entry(entry) != ESP_OK) {
+        ESP_LOGE(TAG, "Error resetting entry: invalid argument");
+        return ESP_ERR_INVALID_ARG;
     }
 
     if(entry->default_value == NULL) {
-        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null default value");
-        return ESP_FAIL;
+        ESP_LOGD(TAG, "Entry %s does not have default value", entry->key);
+        return ESP_OK;
     }
 
+    switch(entry->type) {
+        case i8:
+            *((int8_t *) entry->value) = *((int8_t *) entry->default_value);
+        break;
+        case u8:
+        case single_choice: // Change this to a different integral type to allow for other than 256 options
+            *((uint8_t *) entry->value) = *((uint8_t *) entry->default_value);
+        break;
+        case i16:
+            *((int16_t *) entry->value) = *((int16_t *) entry->default_value);
+        break;
+        case u16:
+            *((uint16_t *) entry->value) = *((uint16_t *) entry->default_value);
+        break;
+        case i32:
+            *((int32_t *) entry->value) = *((int32_t *) entry->default_value);
+        break;
+        case u32:
+        case multiple_choice: // Change this to a different integral type to allow for other than 32 options
+            *((uint32_t *) entry->value) = *((uint32_t *) entry->default_value);
+        break;
+        case i64:
+            *((int64_t *) entry->value) = *((int64_t *) entry->default_value);
+        break;
+        case u64:
+            *((uint64_t *) entry->value) = *((uint64_t *) entry->default_value);
+        break;
+        case flt:
+            *((float *) entry->value) = *((float *) entry->default_value);
+        break;
+        case dbl:
+            *((double *) entry->value) = *((double *) entry->default_value);
+        break;
+        case text: // This type needs to be null-terminated
+        case password:
+            strcpy((char *) entry->value, (char *) entry->default_value);
+        break;
+        case blob: // Data structures, binary and other non-null-terminated types go here
+        case image:
+            ESP_LOGE(TAG, "Blob and image support not implemented");
+        break;
+        default:
+            ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
+            return ESP_FAIL;
+        break;
+    }
+
+    ESP_LOGD(TAG, "Entry %s reset to default", entry->key);
     return ESP_OK;
 }

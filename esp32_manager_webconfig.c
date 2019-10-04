@@ -152,7 +152,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_root(httpd_req_t *req)
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Query string: %s", esp32_manager_webconfig_content);
         // Search for reboot key
-        e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+        e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
         if(e == ESP_OK) { // Reboot parameter found in query
             e = esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req); // Generate HTML
             if(e == ESP_OK) {
@@ -242,29 +242,45 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 ESP_LOGD(TAG, "Selected namespace %s", namespace->key);
                 // Check if there are settings to update
                 uint16_t entry_updated = 0; // Flag to mark if any settings were changed
-                for(uint16_t i=0; i < namespace->size; ++i) {
-                    esp32_manager_entry_t * entry = namespace->entries[i];
-                    char encoded[100]; // FIXME Magic number
-                    ESP_LOGD(TAG, "Searching for entry %s.%s", namespace->key, entry->key);
-                    e = httpd_query_key_value(esp32_manager_webconfig_content, entry->key, encoded, sizeof(encoded));
-                    if(e == ESP_OK) { // There is a setting to update
-                        ESP_LOGD(TAG, "Value before decoding: %s", encoded);
-                        esp32_manager_webconfig_urldecode(esp32_manager_webconfig_buffer, encoded); // Decode value from URL
-                        ESP_LOGD(TAG, "Value after decoding: %s", esp32_manager_webconfig_buffer);
-                        e = entry->from_string(entry, esp32_manager_webconfig_buffer);
+                e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_RESET_DEFAULTS, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+                if(e == ESP_OK) {
+                    e = esp32_manager_reset_namespace(namespace);
+                    if(e == ESP_OK) {
+                        ESP_LOGD(TAG, "Namespace %s entry values reset", namespace->key);
+                        e = esp32_manager_namespace_nvs_erase(namespace);
                         if(e == ESP_OK) {
-                            ESP_LOGD(TAG, "Entry %s.%s updated to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
-                            ++entry_updated;
+                            ESP_LOGD(TAG, "Namespace %s erased from NVS", namespace->key);
                         } else {
-                            ESP_LOGE(TAG, "Error updating entry %s.%s to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
-                        }
-                        e = entry->to_string(entry, encoded);
-                        if(e == ESP_OK) {
-                            ESP_LOGD(TAG, "Entry %s.%s content %s", namespace->key, entry->key, encoded);
-                        } else {
-                            ESP_LOGE(TAG, "Error converting entry %s.%s to string", namespace->key, entry->key);
-                        }
-                    } // Nothing to do if setting is not found in query string
+                            ESP_LOGD(TAG, "Error erasing namespace %s from NVS", namespace->key);
+                        }                        
+                    } else {
+                        ESP_LOGE(TAG, "Error resetting namespace %s entry values", namespace->key);
+                    }
+                } else {
+                    for(uint16_t i=0; i < namespace->size; ++i) {
+                        esp32_manager_entry_t * entry = namespace->entries[i];
+                        char encoded[100]; // FIXME Magic number
+                        ESP_LOGD(TAG, "Searching for entry %s.%s", namespace->key, entry->key);
+                        e = httpd_query_key_value(esp32_manager_webconfig_content, entry->key, encoded, sizeof(encoded));
+                        if(e == ESP_OK) { // There is a setting to update
+                            ESP_LOGD(TAG, "Value before decoding: %s", encoded);
+                            esp32_manager_webconfig_urldecode(esp32_manager_webconfig_buffer, encoded); // Decode value from URL
+                            ESP_LOGD(TAG, "Value after decoding: %s", esp32_manager_webconfig_buffer);
+                            e = entry->from_string(entry, esp32_manager_webconfig_buffer);
+                            if(e == ESP_OK) {
+                                ESP_LOGD(TAG, "Entry %s.%s updated", namespace->key, entry->key);
+                                ++entry_updated;
+                            } else {
+                                ESP_LOGE(TAG, "Error updating entry %s.%s to %s", namespace->key, entry->key, esp32_manager_webconfig_buffer);
+                            }
+                            e = entry->to_string(entry, encoded);
+                            if(e == ESP_OK) {
+                                ESP_LOGD(TAG, "Entry %s.%s content %s", namespace->key, entry->key, encoded);
+                            } else {
+                                ESP_LOGE(TAG, "Error converting entry %s.%s to string", namespace->key, entry->key);
+                            }
+                        } // Nothing to do if setting is not found in query string
+                    }
                 }
                 if(entry_updated > 0) {
                     e = esp32_manager_commit_to_nvs(namespace); // Commit changes to namespace
@@ -479,7 +495,9 @@ esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req)
             strcat(buffer, "</a></li>");
         }
     }
-    strcat(buffer, "</ul><a class=\"button\" href=\"/?reboot=1\">Reboot device</a></body></html>");
+    strcat(buffer, "</ul><a class=\"button button-clear\" href=\"/?");
+    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE);
+    strcat(buffer, "=1\">Reboot device</a></body></html>");
 
     return ESP_OK;
 }
@@ -510,7 +528,15 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
         }
     }
 
-    strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a href=\"/setup\">Back</a></body></html>");
+    strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a class=\"button button-outline\" href=\"/setup\">Back</a>");
+    
+    strcat(buffer, "<a class=\"button button-clear\" href=\"/setup?namespace=");
+    strcat(buffer, namespace->key);
+    strcat(buffer, "&");
+    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_RESET_DEFAULTS);
+    strcat(buffer, "=1\">Restore defaults</a>");
+    
+    strcat(buffer, "</body></html>");
 
     return ESP_OK;
 }

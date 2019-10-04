@@ -34,11 +34,12 @@ extern httpd_uri_t esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URIS_SIZE]; /*
 #define WEBCONFIG_MANAGER_URI_GET_INDEX     3           /*!< Position of the get uri in the uris array */
 #define WEBCONFIG_MANAGER_URI_GET_URL       "/get"      /*!< uri of the get page */
 
-#define WEBCONFIG_MANAGER_URI_PARAM_REBOOT  "reboot"    /*!< Query key of the parameter for requesting a reboot */
+#define WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE  "reboot"    /*!< Query key of the parameter for requesting a reboot */
 #define WEBCONFIG_MANAGER_REBOOT_DELAY      3000            /*!< Delay between serving the reboot page and rebooting the device */
 
-#define WEBCONFIG_MANAGER_URI_PARAM_NAMESPACE   "namespace" /*!< Query key to select namespace using the get uri */
-#define WEBCONFIG_MANAGER_URI_PARAM_ENTRY       "entry"     /*!< Query key to request a setting using the get uri */
+#define WEBCONFIG_MANAGER_URI_PARAM_NAMESPACE       "namespace" /*!< Query key to select namespace using the get uri */
+#define WEBCONFIG_MANAGER_URI_PARAM_ENTRY           "entry"     /*!< Query key to request a setting using the get uri */
+#define WEBCONFIG_MANAGER_URI_PARAM_RESET_DEFAULTS  "reset"
 
 #define WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH    1500    /*!< Maximum lenght of an HTTP response */
 
