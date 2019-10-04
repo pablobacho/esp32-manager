@@ -28,7 +28,8 @@ esp32_manager_entry_t esp32_manager_mqtt_entry_broker_url = {
     .type = text,
     .value = (void *) esp32_manager_mqtt_broker_url,
     .default_value = (void *) ESP32_MANAGER_MQTT_BROKER_URL_DEFAULT,
-    .attributes = ESP32_MANAGER_ATTR_READWRITE
+    .attributes = ESP32_MANAGER_ATTR_READWRITE,
+    .from_string = &esp32_manager_mqtt_entry_broker_url_from_string
 };
 
 esp_err_t esp32_manager_mqtt_init() {
@@ -149,4 +150,31 @@ void esp32_manager_mqtt_system_event_handler(void * handler_arg, esp_event_base_
             break;
         default: break;
     }
+}
+
+esp_err_t esp32_manager_mqtt_entry_broker_url_from_string(esp32_manager_entry_t * entry, char * source)
+{
+    esp_err_t e;
+
+    if(esp32_manager_validate_entry(entry) != ESP_OK) {
+        ESP_LOGE(TAG, "Error: invalid entry");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if(source == NULL) {
+        ESP_LOGE(TAG, "Error: null string");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t broker_url_len = strlen(source);
+    if((broker_url_len == 0) || (broker_url_len > ESP32_MANAGER_MQTT_BROKER_URL_MAX_LENGTH)) {
+        ESP_LOGE(TAG, "Error: MQTT broker url length %u", broker_url_len);
+        return ESP_FAIL;
+    }
+
+    strlcpy((char *) entry->value, source, broker_url_len +1);
+
+    ESP_LOGD(TAG, "MQTT broker url successfully updated to %s", source);
+
+    return ESP_OK;
 }

@@ -30,7 +30,8 @@ esp32_manager_entry_t esp32_manager_network_entry_hostname = {
     .type = text,
     .value = (void *) esp32_manager_network_hostname,
     .default_value = (void *) ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT,
-    .attributes = ESP32_MANAGER_ATTR_READWRITE
+    .attributes = ESP32_MANAGER_ATTR_READWRITE,
+    .from_string = &esp32_manager_network_entry_hostname_from_string
 };
 
 esp32_manager_entry_t esp32_manager_network_entry_ssid = {
@@ -39,7 +40,8 @@ esp32_manager_entry_t esp32_manager_network_entry_ssid = {
     .type = text,
     .value = (void *) esp32_manager_network_ssid,
     .default_value = (void *) ESP32_MANAGER_NETWORK_SSID_DEFAULT,
-    .attributes = ESP32_MANAGER_ATTR_READWRITE
+    .attributes = ESP32_MANAGER_ATTR_READWRITE,
+    .from_string = &esp32_manager_network_entry_ssid_from_string
 };
 
 esp32_manager_entry_t esp32_manager_network_entry_password = {
@@ -48,7 +50,8 @@ esp32_manager_entry_t esp32_manager_network_entry_password = {
     .type = password,
     .value = (void *) esp32_manager_network_password,
     .default_value = (void *) ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT,
-    .attributes = ESP32_MANAGER_ATTR_WRITE
+    .attributes = ESP32_MANAGER_ATTR_WRITE,
+    .from_string = &esp32_manager_network_entry_password_from_string
 };
 
 ESP_EVENT_DEFINE_BASE(ESP32_MANAGER_NETWORK_EVENT_BASE);
@@ -207,6 +210,13 @@ esp_err_t esp32_manager_network_wifi_start_station_mode()
     } else {
         ESP_LOGE(TAG, "Error starting WiFi in station mode: %s", esp_err_to_name(e));
         return ESP_FAIL;
+    }
+
+    e = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, esp32_manager_network_hostname);
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "Hostname set to %s", esp32_manager_network_hostname);
+    } else {
+        ESP_LOGE(TAG, "Error setting hostname: %s", esp_err_to_name(e));
     }
 
     return ESP_OK;
@@ -400,6 +410,114 @@ esp_err_t esp32_manager_network_event_handler(void * context, system_event_t * e
             ESP_LOGE(TAG, "Event: unknown");
         break;
     }
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_network_entry_hostname_from_string(esp32_manager_entry_t * entry, char * source)
+{
+    esp_err_t e;
+
+    if(esp32_manager_validate_entry(entry) != ESP_OK) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_hostname_from_string: invalid entry");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if(source == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_hostname_from_string: null string");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    char hostname[ESP32_MANAGER_NETWORK_HOSTNAME_MAX_LENGTH +1]; // Temporary strin to process the new hostname on
+    uint8_t hostname_len = strlen(source);
+    if((hostname_len == 0) || (hostname_len > ESP32_MANAGER_NETWORK_HOSTNAME_MAX_LENGTH)) {
+        ESP_LOGE(TAG, "Hostname esp32_manager_network_entry_hostname_from_string: length %u", hostname_len);
+        return ESP_FAIL;
+    }
+    strlcpy(hostname, source, hostname_len +1);
+
+    if(!isalnum((unsigned char) hostname[0])) {
+        ESP_LOGE(TAG, "Error: hostname must start with an alphanumeric character");
+        return ESP_FAIL;
+    } else {
+        hostname[0] = tolower((unsigned char) hostname[0]);
+    }
+    for(uint8_t i=1; i < hostname_len; ++i) {
+        if(!isalnum((unsigned char) hostname[i]) && (hostname[i] != '-')) {
+            ESP_LOGE(TAG, "Error: invalid hostname (found '%c')", hostname[i]);
+            return ESP_FAIL;
+        }
+        hostname[i] = tolower((unsigned char) hostname[i]);
+    }
+
+    e = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
+    if(e !=ESP_OK) {
+        ESP_LOGE(TAG, "Error updating hostname on TCP/IP stack: %s", esp_err_to_name(e));
+        return ESP_FAIL;
+    }
+
+    strlcpy((char *) entry->value, hostname, hostname_len +1);
+
+    ESP_LOGD(TAG, "Hostname successfully updated to %s", hostname);
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_network_entry_ssid_from_string(esp32_manager_entry_t * entry, char * source)
+{
+    if(esp32_manager_validate_entry(entry) != ESP_OK) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_ssid_from_string: invalid entry");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if(source == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_ssid_from_string: null string");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    char ssid[ESP32_MANAGER_NETWORK_SSID_MAX_LENGTH +1];
+    uint8_t ssid_len = strlen(source);
+    if((ssid_len == 0) || (ssid_len > ESP32_MANAGER_NETWORK_SSID_MAX_LENGTH)) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_ssid_from_string: length %u", ssid_len);
+        return ESP_FAIL;
+    } 
+
+    strlcpy(ssid, source, ssid_len +1);
+
+    while(ssid[ssid_len -1] == ' ') {
+        ssid[ssid_len -1] = 0;
+        --ssid_len;
+        ESP_LOGW(TAG, "Warning: Removed trailing space from SSID");
+    }
+
+    strlcpy((char *) entry->value, ssid, ssid_len +1);
+
+    ESP_LOGD(TAG, "SSID successfully updated to %s", ssid);
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_network_entry_password_from_string(esp32_manager_entry_t * entry, char * source)
+{
+    if(esp32_manager_validate_entry(entry) != ESP_OK) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_password_from_string: invalid entry");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if(source == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_password_from_string: null string");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t password_len = strlen(source);
+    if((password_len < ESP32_MANAGER_NETWORK_PASSWORD_MIN_LENGTH) || (password_len > ESP32_MANAGER_NETWORK_PASSWORD_MAX_LENGTH)) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_password_from_string: length %u", password_len);
+        return ESP_FAIL;
+    }
+
+    strlcpy((char *) entry->value, source, password_len +1);
+
+    ESP_LOGD(TAG, "Password successfully updated to %s", source);
 
     return ESP_OK;
 }

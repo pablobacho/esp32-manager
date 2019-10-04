@@ -176,8 +176,8 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
  * 
  * @param   dest Buffer for the decoded string
  * @param   src Encoded value extracted from the query string
- * @return  Size of the decoded string
- *          -1 for error
+ * @return  ESP_OK decoded OK
+ *          ESP_FAIL string format error
  */
 esp_err_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src);
 

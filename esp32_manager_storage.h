@@ -21,7 +21,9 @@
 extern "C" {
 #endif
 
-#define ESP32_MANAGER_NAMESPACES_SIZE  10     /*!< Maximum number of namespaces that can be registered */
+#define ESP32_MANAGER_NAMESPACES_SIZE           10  /*!< Maximum number of namespaces that can be registered */
+#define ESP32_MANAGER_NAMESPACE_KEY_MAX_LENGTH  15  /*!< Maximum length of a namespace key */
+#define ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH      15  /*!< Maximum length of an entry key */
   
 #define ESP32_MANAGER_ATTR_READ         0b00000001  /*!< READ flag */
 #define ESP32_MANAGER_ATTR_WRITE        0b00000010  /*!< WRITE flag */
@@ -33,7 +35,7 @@ extern "C" {
 typedef enum {
     i8, u8, i16, u16, i32, u32, i64, u64, flt, dbl,
     multiple_choice, single_choice,
-    text, password, wifi_ssid,
+    text, password,
     blob, image
 } esp32_manager_type_t;
 
@@ -140,6 +142,37 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace);
  *          ESP_ERR_INVALID_ARG invalid handle
  */
 esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace);
+
+/**
+ * @brief   Validate namespace pointer.
+ * 
+ *          Checks for null on:
+ *          * namespace pointer
+ *          * key (also max length)
+ *          * friendly name
+ *          * entries
+ * 
+ * @param   namespace pointer to namespace
+ * @return  ESP_OK valid
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace);
+
+/**
+ * @brief   Validate entry pointer.
+ * 
+ *          Checks for null on:
+ *          * entry pointer
+ *          * key (also max length)
+ *          * friendly name
+ *          * value
+ *          * default_value
+ * 
+ * @param   entry pointer to entry
+ * @return  ESP_OK valid
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_validate_entry(esp32_manager_entry_t * entry);
 
 /**
  * Checks whether a character x is a hexadecimal digit or not.

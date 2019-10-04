@@ -169,7 +169,6 @@ esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, c
         break;
         case text:
         case password:
-        case wifi_ssid:
             strcpy(dest, (char *) entry->value);
         break;
         case single_choice:
@@ -236,9 +235,6 @@ esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry,
             break;
         case password:
             strcpy((char *) entry->value, source);
-            break;
-        case wifi_ssid:
-            strncpy((char *) entry->value, source, MIN(ESP32_MANAGER_TYPE_WIFI_SSID_MAX_LENGTH, strlen(source)));
             break;
         // TODO Implement these cases
         case flt:
@@ -427,6 +423,71 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
             }
             
         }
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace)
+{
+    if(namespace == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_namespace_integrity: null pointer");
+        return ESP_FAIL;
+    }
+
+    if(namespace->key == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_namespace_integrity: null key");
+        return ESP_FAIL;
+    } else {
+        if(strlen(namespace->key) > ESP32_MANAGER_NAMESPACE_KEY_MAX_LENGTH) {
+            ESP_LOGE(TAG, "Error esp32_manager_check_namespace_integrity: key is too long");
+            return ESP_FAIL;
+        }
+    }
+
+    if(namespace->friendly == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_namespace_integrity: null friendly name");
+        return ESP_FAIL;
+    }
+
+    if(namespace->entries == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_namespace_integrity: null entries");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_validate_entry(esp32_manager_entry_t * entry)
+{
+    if(entry == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null pointer");
+        return ESP_FAIL;
+    }
+
+    if(entry->key == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null key");
+        return ESP_FAIL;
+    } else {
+        if(strlen(entry->key) > ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH) {
+            ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: key is too long");
+            return ESP_FAIL;
+        }
+    }
+
+    if(entry->friendly == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null friendly name");
+        return ESP_FAIL;
+    }
+
+    if(entry->value == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null value");
+        return ESP_FAIL;
+    }
+
+    if(entry->default_value == NULL) {
+        ESP_LOGE(TAG, "Error esp32_manager_check_entry_integrity: null default value");
+        return ESP_FAIL;
     }
 
     return ESP_OK;

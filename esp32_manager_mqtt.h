@@ -83,6 +83,16 @@ esp_err_t esp32_manager_mqtt_event_handler(esp_mqtt_event_handle_t event);
  */
 void esp32_manager_mqtt_system_event_handler(void * handler_arg, esp_event_base_t base, int32_t id, void * event_data);
 
+/**
+ * @brief   esp32_manager callback to update MQTT broker url from string
+ * 
+ * @param   entry pointer to entry
+ * @param   source string encoded new value
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_mqtt_entry_broker_url_from_string(esp32_manager_entry_t * entry, char * source);
+
 #ifdef __cplusplus
 }
 #endif

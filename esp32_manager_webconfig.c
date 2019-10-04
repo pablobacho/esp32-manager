@@ -555,17 +555,6 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
             }
             strcat(dest, " />");
             break;
-        case wifi_ssid:
-            strcat(dest, "<input type=\"text\" name=\"");
-            strcat(dest, entry->key);   
-            strcat(dest, "\" value=\"");
-            strcat(dest, (char *) entry->value);
-            strcat(dest, "\"");
-            if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
-                strcat(dest, "readonly");
-            }
-            strcat(dest, " maxlength=\"32\" />");
-            break;
         case password:
             strcat(dest, "<input type=\"password\" name=\"");
             strcat(dest, entry->key);   

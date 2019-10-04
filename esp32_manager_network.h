@@ -11,13 +11,14 @@
 #define _ESP32_MANAGER_NETWORK_H_
 
 #include <string.h>
+#include <ctype.h>
 
 #include "esp_system.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
-
+#include "tcpip_adapter.h"
 #include "freertos/event_groups.h"
 
 #include "esp32_manager.h"
@@ -31,7 +32,7 @@ extern "C" {
 
 #define ESP32_MANAGER_NETWORK_HOSTNAME_KEY        "hostname"
 #define ESP32_MANAGER_NETWORK_HOSTNAME_FRIENDLY   "Hostname"
-#define ESP32_MANAGER_NETWORK_HOSTNAME_MAX_LENGTH 64
+#define ESP32_MANAGER_NETWORK_HOSTNAME_MAX_LENGTH 32
 #define ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT    "esp32-device"
 
 #define ESP32_MANAGER_NETWORK_SSID_KEY            "ssid"      /*!< SSID entry key */
@@ -41,6 +42,7 @@ extern "C" {
 
 #define ESP32_MANAGER_NETWORK_PASSWORD_KEY        "password"  /*!< password entry key */
 #define ESP32_MANAGER_NETWORK_PASSWORD_FRIENDLY   "Password"  /*!< password friendly name */
+#define ESP32_MANAGER_NETWORK_PASSWORD_MIN_LENGTH 8           /*!< Minimum password length */
 #define ESP32_MANAGER_NETWORK_PASSWORD_MAX_LENGTH 63          /*!< Maximum password length */
 #define ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT    ""          /*!< Default password of the SSID to connect to */
 
@@ -180,6 +182,36 @@ bool esp32_manager_network_is_ap();
  * @return  ESP_OK always succeeds although it does not mean the event was successfully posted
  */
 esp_err_t esp32_manager_network_event_handler(void * context, system_event_t * event);
+
+/**
+ * @brief   esp32_manager callback to update hostname from string
+ * 
+ * @param   entry pointer to entry
+ * @param   source string encoded new value
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_network_entry_hostname_from_string(esp32_manager_entry_t * entry, char * source);
+
+/**
+ * @brief   esp32_manager callback to update ssid from string
+ * 
+ * @param   entry pointer to entry
+ * @param   source string encoded new value
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_network_entry_ssid_from_string(esp32_manager_entry_t * entry, char * source);
+
+/**
+ * @brief   esp32_manager callback to update password from string
+ * 
+ * @param   entry pointer to entry
+ * @param   source string encoded new value
+ * @return  ESP_OK success
+ *          ESP_FAIL error
+ */
+esp_err_t esp32_manager_network_entry_password_from_string(esp32_manager_entry_t * entry, char * source);
 
 #ifdef __cplusplus
 }
