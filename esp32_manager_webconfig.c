@@ -51,7 +51,7 @@ esp_err_t esp32_manager_webconfig_init()
         return ESP_FAIL;
     }
 
-    esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_STA_LOST_IP, esp32_manager_webconfig_event_handler, NULL);
+    e = esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_STA_LOST_IP, esp32_manager_webconfig_event_handler, NULL);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Registered for event STA_LOST_IP");
     } else {
@@ -59,7 +59,7 @@ esp_err_t esp32_manager_webconfig_init()
         return ESP_FAIL;
     }
 
-    esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_AP_START, esp32_manager_webconfig_event_handler, NULL);
+    e = esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_AP_START, esp32_manager_webconfig_event_handler, NULL);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Registered for event AP_START");
     } else {
@@ -67,7 +67,7 @@ esp_err_t esp32_manager_webconfig_init()
         return ESP_FAIL;
     }
 
-    esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_AP_STOP, esp32_manager_webconfig_event_handler, NULL);
+    e = esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_AP_STOP, esp32_manager_webconfig_event_handler, NULL);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Registered for event AP_STOP");
     } else {
