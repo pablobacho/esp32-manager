@@ -1,8 +1,8 @@
 /**
  * esp32_manager_network.h - ESP-IDF component to work with WiFi
- * 
+ *
  * Include this header file to use the component.
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -112,9 +112,9 @@ typedef enum {
 
 /**
  * @brief   Initialize esp32_manager_network module.
- * 
+ *
  *          This function needs to be called after initializing settings_manager
- * 
+ *
  * @return  ESP_OK success
  *          ESP_FAIL error
  */
@@ -122,7 +122,7 @@ esp_err_t esp32_manager_network_init();
 
 /**
  * @brief   Start WiFi and connect to network or create AP
- * 
+ *
  * @param   mode Mode to start the WiFi on: AUTO, STA or AP.
  * @return  ESP_OK success
  *          ESP_FAIL error
@@ -131,7 +131,7 @@ esp_err_t esp32_manager_network_wifi_start(esp32_manager_network_wifi_mode_t mod
 
 /**
  * @brief   Start WiFi in station mode
- * 
+ *
  * @return  ESP_OK success
  *          ESP_FAIL error
  */
@@ -139,7 +139,7 @@ esp_err_t esp32_manager_network_wifi_start_station_mode();
 
 /**
  * @brief   Start WiFi in AP mode
- * 
+ *
  * @return  ESP_OK success
  *          ESP_FAIL error
  */
@@ -147,7 +147,7 @@ esp_err_t esp32_manager_network_wifi_start_ap_mode();
 
 /**
  * @brief   Stop WiFi
- * 
+ *
  * @return  ESP_OK success
  *          ESP_ERR_WIFI_NOT_INIT if wifi not initialized
  */
@@ -155,37 +155,37 @@ esp_err_t esp32_manager_network_wifi_stop();
 
 /**
  * @brief   Check if device connected to WiFi network.
- * 
+ *
  * @return  Connection status
  */
 bool esp32_manager_network_connected();
 
 /**
  * @brief   Check if device got IP address.
- * 
+ *
  * @return  IP status
  */
 bool esp32_manager_network_got_ip();
 
 /**
  * @brief   Check if AP is started.
- * 
+ *
  * @return  AP status
  */
 bool esp32_manager_network_is_ap();
 
 /**
  * @brief   Event handler for network events.
- * 
+ *
  *          This function receives events from the legacy event system and posts them to the default event loop of the new event library.
- * 
+ *
  * @return  ESP_OK always succeeds although it does not mean the event was successfully posted
  */
 esp_err_t esp32_manager_network_event_handler(void * context, system_event_t * event);
 
 /**
  * @brief   esp32_manager callback to update hostname from string
- * 
+ *
  * @param   entry pointer to entry
  * @param   source string encoded new value
  * @return  ESP_OK success
@@ -195,7 +195,7 @@ esp_err_t esp32_manager_network_entry_hostname_from_string(esp32_manager_entry_t
 
 /**
  * @brief   esp32_manager callback to update ssid from string
- * 
+ *
  * @param   entry pointer to entry
  * @param   source string encoded new value
  * @return  ESP_OK success
@@ -203,9 +203,11 @@ esp_err_t esp32_manager_network_entry_hostname_from_string(esp32_manager_entry_t
  */
 esp_err_t esp32_manager_network_entry_ssid_from_string(esp32_manager_entry_t * entry, char * source);
 
+esp_err_t esp32_manager_network_entry_ssid_html_form_widget(char * buffer, esp32_manager_entry_t * entry, size_t buffer_size);
+
 /**
  * @brief   esp32_manager callback to update password from string
- * 
+ *
  * @param   entry pointer to entry
  * @param   source string encoded new value
  * @return  ESP_OK success

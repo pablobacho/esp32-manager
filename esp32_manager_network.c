@@ -1,6 +1,6 @@
 /**
  * esp32_manager_network.c
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -41,7 +41,8 @@ esp32_manager_entry_t esp32_manager_network_entry_ssid = {
     .value = (void *) esp32_manager_network_ssid,
     .default_value = (void *) ESP32_MANAGER_NETWORK_SSID_DEFAULT,
     .attributes = ESP32_MANAGER_ATTR_READWRITE,
-    .from_string = &esp32_manager_network_entry_ssid_from_string
+    .from_string = &esp32_manager_network_entry_ssid_from_string,
+    .html_form_widget = &esp32_manager_network_entry_ssid_html_form_widget
 };
 
 esp32_manager_entry_t esp32_manager_network_entry_password = {
@@ -65,7 +66,7 @@ esp_err_t esp32_manager_network_init()
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "WiFi event loop created successfully");
     } else if(e == ESP_ERR_INVALID_STATE) {
-        ESP_LOGW(TAG, "Default event loop was already started");    
+        ESP_LOGW(TAG, "Default event loop was already started");
     } else {
         ESP_LOGE(TAG, "Error creating WiFi event loop: %s", esp_err_to_name(e));
         return e;
@@ -240,19 +241,19 @@ esp_err_t esp32_manager_network_wifi_start_ap_mode()
     strcpy((char *) wifi_config.ap.ssid, ESP32_MANAGER_NETWORK_AP_SSID);
     strcpy((char *) wifi_config.ap.password, ESP32_MANAGER_NETWORK_AP_PASSWORD);
 
-    e = esp_wifi_set_mode(WIFI_MODE_AP);
+    e = esp_wifi_set_mode(WIFI_MODE_APSTA);
     if(e == ESP_OK) {
-        ESP_LOGD(TAG, "WiFi set to AP mode");
+        ESP_LOGD(TAG, "WiFi set to AP+STA mode");
     } else {
-        ESP_LOGE(TAG, "Error setting WiFi to AP mode: %s", esp_err_to_name(e));
+        ESP_LOGE(TAG, "Error setting WiFi to AP+STA mode: %s", esp_err_to_name(e));
         return ESP_FAIL;
     }
 
     e = esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config);
     if(e == ESP_OK) {
-        ESP_LOGD(TAG, "WiFi configured");
+        ESP_LOGD(TAG, "WiFi AP configured");
     } else {
-        ESP_LOGE(TAG, "Error configuring WiFi: %s", esp_err_to_name(e));
+        ESP_LOGE(TAG, "Error configuring WiFi AP: %s", esp_err_to_name(e));
         return ESP_FAIL;
     }
 
@@ -262,9 +263,9 @@ esp_err_t esp32_manager_network_wifi_start_ap_mode()
 
     e = esp_wifi_start();
     if(e == ESP_OK) {
-        ESP_LOGD(TAG, "Wifi started in AP mode");
+        ESP_LOGD(TAG, "Wifi started in AP+STA mode");
     } else {
-        ESP_LOGE(TAG, "Error starting Wifi in AP mode: %s", esp_err_to_name(e));
+        ESP_LOGE(TAG, "Error starting Wifi in AP+STA mode: %s", esp_err_to_name(e));
     }
 
     return ESP_OK;
@@ -480,7 +481,7 @@ esp_err_t esp32_manager_network_entry_ssid_from_string(esp32_manager_entry_t * e
     if((ssid_len == 0) || (ssid_len > ESP32_MANAGER_NETWORK_SSID_MAX_LENGTH)) {
         ESP_LOGE(TAG, "Error esp32_manager_network_entry_ssid_from_string: length %u", ssid_len);
         return ESP_FAIL;
-    } 
+    }
 
     strlcpy(ssid, source, ssid_len +1);
 
@@ -493,6 +494,77 @@ esp_err_t esp32_manager_network_entry_ssid_from_string(esp32_manager_entry_t * e
     strlcpy((char *) entry->value, ssid, ssid_len +1);
 
     ESP_LOGD(TAG, "SSID successfully updated to %s", ssid);
+
+    return ESP_OK;
+}
+
+esp_err_t esp32_manager_network_entry_ssid_html_form_widget(char * buffer, esp32_manager_entry_t * entry, size_t buffer_size)
+{
+    esp_err_t e;
+
+    if(buffer == NULL || entry == NULL || buffer_size == 0) {
+        ESP_LOGE(TAG, "Error esp32_manager_network_entry_ssid_html_form_widget: invalid args");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    wifi_scan_config_t scan_config = {
+        .ssid = NULL,
+        .bssid = NULL,
+        .channel = 0,
+        .show_hidden = false
+    };
+
+    strlcpy(buffer, "<div>", buffer_size);
+
+    e = esp_wifi_scan_start(&scan_config, true);
+    if(e != ESP_OK) {
+        ESP_LOGE(TAG, "Error starting WiFi scan: %s", esp_err_to_name(e));
+    } else { // Scan successful
+        ESP_LOGD(TAG, "WiFi scan started");
+
+        uint16_t ap_records_size = 10;
+        wifi_ap_record_t ap_records[10];
+        e = esp_wifi_scan_get_ap_records(&ap_records_size, ap_records);
+        if(e != ESP_OK) {
+            ESP_LOGE(TAG, "Error getting WiFi scan records: %s", esp_err_to_name(e));
+        } else { // Got scan records
+            ESP_LOGD(TAG, "Got WiFi scan records");
+            // Print AP list
+            // Table header
+
+            strlcat(buffer, "<table><thead><tr><th>SSID</th><th>Signal</th></tr></thead><tbody>", buffer_size);
+            for(uint8_t i=0; i < ap_records_size; ++i) {
+                strlcat(buffer, "<tr><td><a href=\"#\" onclick=\"document.getElementById('", buffer_size);
+                strlcat(buffer, (char *) entry->key, buffer_size);
+                strlcat(buffer, "').value='", buffer_size);
+                strlcat(buffer, (char *) ap_records[i].ssid, buffer_size);
+                strlcat(buffer, "';\">", buffer_size);
+                strlcat(buffer, (char *) ap_records[i].ssid, buffer_size);
+                strlcat(buffer, "</a></td><td>", buffer_size);
+                if(ap_records[i].rssi > -60) {
+                    strlcat(buffer, "Excellent", buffer_size);
+                } else if(ap_records[i].rssi > -70) {
+                    strlcat(buffer, "Good", buffer_size);
+                } else if(ap_records[i].rssi > -80) {
+                    strlcat(buffer, "Poor", buffer_size);
+                } else {
+                    strlcat(buffer, "Bad", buffer_size);
+                }
+                strlcat(buffer, "</td></tr>", buffer_size); // close column, close row
+            }
+            strlcat(buffer, "</tbody></table>", buffer_size);
+        }
+    }
+
+    strlcat(buffer, entry->friendly, buffer_size);
+    strlcat(buffer, "<br/>", buffer_size);
+    strlcat(buffer, "<input type=\"text\" id=\"", buffer_size);
+    strlcat(buffer, entry->key, buffer_size);
+    strlcat(buffer, "\" name=\"", buffer_size);
+    strlcat(buffer, entry->key, buffer_size);
+    strlcat(buffer, "\" value=\"", buffer_size);
+    strlcat(buffer, (char *) entry->value, buffer_size);
+    strlcat(buffer, "\" />", buffer_size);
 
     return ESP_OK;
 }

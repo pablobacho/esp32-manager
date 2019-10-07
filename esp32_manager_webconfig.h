@@ -47,7 +47,7 @@ extern httpd_uri_t * esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URIS_SIZE]; 
 
 #define WEBCONFIG_MANAGER_REBOOT_DELAY      3000            /*!< Delay between serving the reboot page and rebooting the device */
 
-#define WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH    1500    /*!< Maximum lenght of an HTTP response */
+#define WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH    10240    /*!< Maximum lenght of an HTTP response */
 
 extern char esp32_manager_webconfig_content[CONFIG_HTTPD_MAX_REQ_HDR_LEN +1]; /*!< Buffer to store requests' content */
 extern char esp32_manager_webconfig_buffer[WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH +1]; /*!< Buffer to store responses */
