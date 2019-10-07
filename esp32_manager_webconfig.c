@@ -1,6 +1,6 @@
 /**
  * esp32_manager_webconfig.c
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -9,38 +9,58 @@
 
 static const char * TAG = "esp32_manager_webconfig";
 
-httpd_uri_t esp32_manager_webconfig_uris[];
+httpd_uri_t * esp32_manager_webconfig_uris[];
 
 httpd_handle_t esp32_manager_webconfig_webserver;
 
 char esp32_manager_webconfig_content[];
 char esp32_manager_webconfig_buffer[] = "";
 
+httpd_uri_t esp32_manager_webconfig_uri_root = {
+    .uri = WEBCONFIG_MANAGER_URI_ROOT_URL,
+    .method = HTTP_GET,
+    .handler = esp32_manager_webconfig_uri_handler_root,
+    .user_ctx = NULL
+};
+
+httpd_uri_t esp32_manager_webconfig_uri_css = {
+    .uri = WEBCONFIG_MANAGER_URI_CSS_URL,
+    .method = HTTP_GET,
+    .handler = esp32_manager_webconfig_uri_handler_style,
+    .user_ctx = NULL
+};
+
+httpd_uri_t esp32_manager_webconfig_uri_setup = {
+    .uri = WEBCONFIG_MANAGER_URI_SETUP_URL,
+    .method = HTTP_GET,
+    .handler = esp32_manager_webconfig_uri_handler_setup,
+    .user_ctx = NULL
+};
+
+httpd_uri_t esp32_manager_webconfig_uri_get = {
+    .uri = WEBCONFIG_MANAGER_URI_GET_URL,
+    .method = HTTP_GET,
+    .handler = esp32_manager_webconfig_uri_handler_get,
+    .user_ctx = NULL
+};
+
+httpd_uri_t esp32_manager_webconfig_uri_factory = {
+    .uri = WEBCONFIG_MANAGER_URI_FACTORY_URL,
+    .method = HTTP_GET,
+    .handler = esp32_manager_webconfig_uri_handler_factory,
+    .user_ctx = NULL
+};
 
 esp_err_t esp32_manager_webconfig_init()
 {
     esp_err_t e;
 
     // Create uris
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].uri        = WEBCONFIG_MANAGER_URI_ROOT_URL;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].method     = HTTP_GET;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].handler    = esp32_manager_webconfig_uri_handler_root;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX].user_ctx   = NULL;
-
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].uri         = WEBCONFIG_MANAGER_URI_CSS_URL;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].method      = HTTP_GET;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].handler     = esp32_manager_webconfig_uri_handler_style;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX].user_ctx    = NULL;
-
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].uri       = WEBCONFIG_MANAGER_URI_SETUP_URL;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].method    = HTTP_GET;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].handler   = esp32_manager_webconfig_uri_handler_setup;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX].user_ctx  = NULL;
-
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_GET_INDEX].uri         = WEBCONFIG_MANAGER_URI_GET_URL;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_GET_INDEX].method      = HTTP_GET;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_GET_INDEX].handler     = esp32_manager_webconfig_uri_handler_get;
-    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_GET_INDEX].user_ctx    = NULL;
+    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_ROOT_INDEX] = &esp32_manager_webconfig_uri_root;
+    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_CSS_INDEX] = &esp32_manager_webconfig_uri_css;
+    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_SETUP_INDEX] = &esp32_manager_webconfig_uri_setup;
+    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_GET_INDEX] = &esp32_manager_webconfig_uri_get;
+    esp32_manager_webconfig_uris[WEBCONFIG_MANAGER_URI_FACTORY_INDEX] = &esp32_manager_webconfig_uri_factory;
 
     // Register events relevant to the webserver
     e = esp_event_handler_register(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_STA_GOT_IP, esp32_manager_webconfig_event_handler, NULL);
@@ -92,11 +112,11 @@ httpd_handle_t esp32_manager_webconfig_webserver_start()
     if(httpd_start(&server, &config) == ESP_OK) {
         // Register uris
         for(uint16_t i=0; i < WEBCONFIG_MANAGER_URIS_SIZE; ++i) {
-            e = httpd_register_uri_handler(server, &esp32_manager_webconfig_uris[i]);
+            e = httpd_register_uri_handler(server, esp32_manager_webconfig_uris[i]);
             if(e == ESP_OK) {
-                ESP_LOGD(TAG, "Registered uri %s", esp32_manager_webconfig_uris[i].uri);
+                ESP_LOGD(TAG, "Registered uri %s", esp32_manager_webconfig_uris[i]->uri);
             } else {
-                ESP_LOGE(TAG, "Error registering uri %s: %s", esp32_manager_webconfig_uris[i].uri, esp_err_to_name(e));
+                ESP_LOGE(TAG, "Error registering uri %s: %s", esp32_manager_webconfig_uris[i]->uri, esp_err_to_name(e));
                 esp32_manager_webconfig_webserver_stop(&server);
                 return NULL;
             }
@@ -194,7 +214,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_root(httpd_req_t *req)
 esp_err_t esp32_manager_webconfig_uri_handler_style(httpd_req_t *req)
 {
     esp_err_t e;
-    
+
     e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
     e += httpd_resp_set_hdr(req, "Expires", "0");
@@ -242,7 +262,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 ESP_LOGD(TAG, "Selected namespace %s", namespace->key);
                 // Check if there are settings to update
                 uint16_t entry_updated = 0; // Flag to mark if any settings were changed
-                e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_RESET_DEFAULTS, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+                e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
                 if(e == ESP_OK) {
                     e = esp32_manager_reset_namespace(namespace);
                     if(e == ESP_OK) {
@@ -252,7 +272,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                             ESP_LOGD(TAG, "Namespace %s erased from NVS", namespace->key);
                         } else {
                             ESP_LOGD(TAG, "Error erasing namespace %s from NVS", namespace->key);
-                        }                        
+                        }
                     } else {
                         ESP_LOGE(TAG, "Error resetting namespace %s entry values", namespace->key);
                     }
@@ -333,7 +353,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
         ESP_LOGE(TAG, "Error processing query string: %s", esp_err_to_name(e));
         httpd_resp_set_status(req, HTTPD_500); // Set response to error 500
     }
-    
+
     e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
     e += httpd_resp_set_hdr(req, "Expires", "0");
@@ -396,7 +416,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_get(httpd_req_t * req)
                         strcpy(esp32_manager_webconfig_buffer, "Error: invalid format");
                         httpd_resp_set_status(req, HTTPD_500);
                     }
-                    ESP_LOGD(TAG, "Response content: %s", esp32_manager_webconfig_buffer);                 
+                    ESP_LOGD(TAG, "Response content: %s", esp32_manager_webconfig_buffer);
                 } else {
                     ESP_LOGE(TAG, "Requested namespace does not exist");
                     strcpy(esp32_manager_webconfig_buffer, "ERROR: Requested setting does not exist");
@@ -420,7 +440,52 @@ esp_err_t esp32_manager_webconfig_uri_handler_get(httpd_req_t * req)
         ESP_LOGE(TAG, "Error: no query string");
         httpd_resp_set_status(req, HTTPD_404);
     }
-    
+
+    e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
+    e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    e += httpd_resp_set_hdr(req, "Expires", "0");
+    if(e != ESP_OK) {
+        ESP_LOGE(TAG, "Error settings cache headers");
+    }
+
+    e = httpd_resp_send(req, esp32_manager_webconfig_buffer, strlen(esp32_manager_webconfig_buffer));
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "Response sent");
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG, "Error sending response");
+        return ESP_FAIL;
+    }
+}
+
+esp_err_t esp32_manager_webconfig_uri_handler_factory(httpd_req_t * req)
+{
+    esp_err_t e;
+
+    size_t recv_size = MIN(httpd_req_get_url_query_len(req)+1, sizeof(esp32_manager_webconfig_content)-1);
+    ESP_LOGD(TAG, "Request header size: %d", recv_size);
+
+    // Get request query
+    e = httpd_req_get_url_query_str(req, esp32_manager_webconfig_content, recv_size);
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "Query string: %s", esp32_manager_webconfig_content);
+        // Search for operation key
+        e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+        if(e == ESP_OK) { // Reboot requested
+            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req);
+            esp32_manager_webconfig_deferred_reboot(WEBCONFIG_MANAGER_REBOOT_DELAY);
+        }
+        e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+        if(e == ESP_OK) { // Factory reset requested
+            e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
+            for(uint8_t i=0; i < ESP32_MANAGER_NAMESPACES_SIZE; ++i) {
+                esp32_manager_namespace_nvs_erase(esp32_manager_namespaces[i]);
+            }
+            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req);
+            esp32_manager_webconfig_deferred_reboot(WEBCONFIG_MANAGER_REBOOT_DELAY);
+        }
+    }
+
     e = httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     e += httpd_resp_set_hdr(req, "Pragma", "no-cache");
     e += httpd_resp_set_hdr(req, "Expires", "0");
@@ -468,8 +533,8 @@ esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req)
 
     strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
     strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body>Rebooting device. Wait 10 seconds before clicking <a href=\"/setup\">back</a> (Link might not work if network settings were changed)</body>");
-    
+    strcat(buffer, "</head><body><h2>Rebooting device</h2><p>Wait 10 seconds before clicking <a href=\"/setup\">back</a> (Link might not work if network settings were changed)</p></body>");
+
     return ESP_OK;
 }
 
@@ -495,9 +560,11 @@ esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req)
             strcat(buffer, "</a></li>");
         }
     }
-    strcat(buffer, "</ul><a class=\"button button-clear\" href=\"/?");
+    strcat(buffer, "</ul><a class=\"button button-outline\" href=\"/factory?");
     strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE);
-    strcat(buffer, "=1\">Reboot device</a></body></html>");
+    strcat(buffer, "=1\">Reboot device</a><a class=\"button button-clear\" href=\"/factory?");
+    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET);
+    strcat(buffer, "=1\">Factory reset</a></body></html>");
 
     return ESP_OK;
 }
@@ -516,7 +583,7 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
     strcat(buffer, "</head><body><form method=\"get\" action=\"/setup\"><br/><input name=\"namespace\" type=\"hidden\" value=\"");
     strcat(buffer, namespace->key);
     strcat(buffer, "\"><br/>");
-    
+
     for(uint16_t i=0; i < namespace->size; ++i) {
         if(namespace->entries[i] == NULL) continue;
 
@@ -529,13 +596,13 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
     }
 
     strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a class=\"button button-outline\" href=\"/setup\">Back</a>");
-    
+
     strcat(buffer, "<a class=\"button button-clear\" href=\"/setup?namespace=");
     strcat(buffer, namespace->key);
     strcat(buffer, "&");
-    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_RESET_DEFAULTS);
+    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET);
     strcat(buffer, "=1\">Restore defaults</a>");
-    
+
     strcat(buffer, "</body></html>");
 
     return ESP_OK;
@@ -560,9 +627,9 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
         case dbl:
             // <input type="number" name="[entry.key]" value="[entry.value]" />
             strcat(dest, "<input type=\"number\" name=\"");
-            strcat(dest, entry->key);   
+            strcat(dest, entry->key);
             strcat(dest, "\" value=\"");
-            uint16_t len = strlen(dest); 
+            uint16_t len = strlen(dest);
             entry->to_string(entry, &dest[len]);
             strcat(dest, "\"");
             if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
@@ -572,7 +639,7 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
             break;
         case text: // This type needs to be null-terminated
             strcat(dest, "<input type=\"text\" name=\"");
-            strcat(dest, entry->key);   
+            strcat(dest, entry->key);
             strcat(dest, "\" value=\"");
             strcat(dest, (char *) entry->value);
             strcat(dest, "\"");
@@ -583,7 +650,7 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
             break;
         case password:
             strcat(dest, "<input type=\"password\" name=\"");
-            strcat(dest, entry->key);   
+            strcat(dest, entry->key);
             strcat(dest, "\" value=\"");
             strcat(dest, (char *) entry->value);
             strcat(dest, "\"");
@@ -609,13 +676,28 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
         return ESP_OK;
 }
 
+esp_err_t esp32_manager_webconfig_deferred_reboot(uint32_t delay)
+{
+    if(xTaskCreate(esp32_manager_webconfig_deferred_reboot_task, "deferred_reboot", (void *) 2048, delay, 10, NULL) == pdPASS) {
+        return ESP_OK;
+    } else {
+        return ESP_FAIL;
+    }
+}
+
+void esp32_manager_webconfig_deferred_reboot_task(void * pvParameter)
+{
+    vTaskDelay(((uint32_t) pvParameter)/portTICK_PERIOD_MS);
+    esp_restart();
+}
+
 esp_err_t esp32_manager_webconfig_urldecode(char *__restrict__ dest, const char *__restrict__ src)
 {
     char * index_dest;
     const char * index_src; // Pointers to work with both buffers
 	const char * end = src + strlen(src); // This pointer tells us when we reach the end of the source string
 	unsigned int c; // Temporari variable to work with individual chars
- 
+
     // Set index_dest and index_src to the origin of their respective strings (their 0th element)
     // While index_src hasn't reached the end of the string
     // At the end increment the position of index_dest
