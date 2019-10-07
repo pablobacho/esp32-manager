@@ -144,7 +144,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_factory(httpd_req_t * req);
  * @return  ESP_OK: success
  *          ESP_ERR_INVALID_ARG: buffer or req are not valid
  */
-esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req);
+esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req, size_t buffer_size);
 
 /**
  * @brief   Generates HTML code for reboot page
@@ -154,7 +154,7 @@ esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req);
  * @return  ESP_OK: success
  *          ESP_ERR_INVALID_ARG: buffer or req are not valid
  */
-esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req);
+esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req, size_t buffer_size);
 
 /**
  * @brief   Generates HTML code for setup page
@@ -164,7 +164,7 @@ esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req);
  * @return  ESP_OK: success
  *          ESP_ERR_INVALID_ARG: buffer or req are not valid
  */
-esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req);
+esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req, size_t buffer_size);
 
 /**
  * @brief   Generates HTML code for setup namespace page
@@ -175,7 +175,7 @@ esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req);
  * @return  ESP_OK: success
  *          ESP_ERR_INVALID_ARG: buffer, req or namespace are not valid
  */
-esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_t * req, esp32_manager_namespace_t * namespace);
+esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_t * req, esp32_manager_namespace_t * namespace, size_t buffer_size);
 
 /**
  * @brief   Generates the right HTML form input code according to entry type
@@ -185,7 +185,7 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
  * @return  ESP_OK success
  *          ESP_FAIL error
  */
-esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t * entry, char * dest);
+esp_err_t esp32_manager_webconfig_html_form_widget_default(char * dest, esp32_manager_entry_t * entry, size_t buffer_size);
 
 /**
  * @brief   Starts the task that generates a delayed reboot so the webserver can finish up serving http requests

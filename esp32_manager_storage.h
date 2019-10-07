@@ -1,6 +1,6 @@
 /**
  * esp32_manager_storage.h
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -24,7 +24,7 @@ extern "C" {
 #define ESP32_MANAGER_NAMESPACES_SIZE           10  /*!< Maximum number of namespaces that can be registered */
 #define ESP32_MANAGER_NAMESPACE_KEY_MAX_LENGTH  15  /*!< Maximum length of a namespace key */
 #define ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH      15  /*!< Maximum length of an entry key */
-  
+
 #define ESP32_MANAGER_ATTR_READ         0b00000001  /*!< READ flag */
 #define ESP32_MANAGER_ATTR_WRITE        0b00000010  /*!< WRITE flag */
 #define ESP32_MANAGER_ATTR_READWRITE    0b00000011  /*!< READ & WRITE attributes. Meant for readability of the code because of both being commonly used together. */
@@ -53,7 +53,7 @@ typedef struct esp32_manager_entry {
     uint32_t attributes;            /*!< attributes */
     esp_err_t (* from_string)(struct esp32_manager_entry *, char *);  /*!< function to read value from string */
     esp_err_t (* to_string)(struct esp32_manager_entry *, char *);    /*!< function to write value to string */
-    esp_err_t (* html_form_widget)(struct esp32_manager_entry *, char *);   /*!< funtion to generate html form field/widget */
+    esp_err_t (* html_form_widget)(char *, struct esp32_manager_entry *, size_t);   /*!< funtion to generate html form field/widget */
 } esp32_manager_entry_t;
 
 /**
@@ -74,9 +74,9 @@ extern esp32_manager_namespace_t * esp32_manager_namespaces[ESP32_MANAGER_NAMESP
 
 /**
  * @brief   Initialize esp32_manager
- * 
+ *
  * This function should be called only once.
- * 
+ *
  * @return  ESP_OK: success
  *          ESP_FAIL: error opening NVS
  *          ESP_ERR_NVS_PART_NOT_FOUND: NVS partition not found
@@ -85,7 +85,7 @@ esp_err_t esp32_manager_storage_init();
 
 /**
  * @brief   Register namespace with esp32_manager
- * 
+ *
  * @param   key key of the namespace
  * @param   friendly Friendly or human-readable name of the namespace
  * @return  handle to the namespace registered or null for error
@@ -94,7 +94,7 @@ esp_err_t esp32_manager_register_namespace(esp32_manager_namespace_t * namespace
 
 /**
  * @brief   Register esp32 entry
- * 
+ *
  * @param   namespace pointer to the namespace the entry belongs to
  * @param   entry entry to be registered
  * @return  ESP_OK success
@@ -105,7 +105,7 @@ esp_err_t esp32_manager_register_entry(esp32_manager_namespace_t * namespace, es
 
 /**
  * @brief   Default method for converting entry value to string
- * 
+ *
  * @param   entry Pointer to entry
  * @param   dest Output buffer
  * @return  ESP_OK success
@@ -115,7 +115,7 @@ esp_err_t esp32_manager_entry_to_string_default(esp32_manager_entry_t * entry, c
 
 /**
  * @brief   Default method for converting string into entry value
- * 
+ *
  * @param   entry Pointer to entry
  * @param   source Input string
  * @return  ESP_OK success
@@ -125,7 +125,7 @@ esp_err_t esp32_manager_entry_from_string_default(esp32_manager_entry_t * entry,
 
 /**
  * @brief   Commits all esp32 under a namespace to NVS for permanent storage
- * 
+ *
  * @param   namespace pointer to the namespace
  * @return  ESP_OK success
  *          ESP_FAIL error
@@ -135,7 +135,7 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace);
 
 /**
  * @brief   Read all esp32 under a namespace from NVS
- * 
+ *
  * @param   namespace pointer to the namespace
  * @return  ESP_OK success
  *          ESP_FAIL error
@@ -145,7 +145,7 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace);
 
 /**
  * @brief   Erase all namespace content from NVS
- * 
+ *
  * @param   namespace pointer to the namespace
  * @return  ESP_OK success
  *          ESP_FAIL error
@@ -155,13 +155,13 @@ esp_err_t esp32_manager_namespace_nvs_erase(esp32_manager_namespace_t * namespac
 
 /**
  * @brief   Validate namespace pointer.
- * 
+ *
  *          Checks for null on:
  *          * namespace pointer
  *          * key (also max length)
  *          * friendly name
  *          * entries
- * 
+ *
  * @param   namespace pointer to namespace
  * @return  ESP_OK valid
  *          ESP_FAIL error
@@ -170,14 +170,14 @@ esp_err_t esp32_manager_validate_namespace(esp32_manager_namespace_t * namespace
 
 /**
  * @brief   Validate entry pointer.
- * 
+ *
  *          Checks for null on:
  *          * entry pointer
  *          * key (also max length)
  *          * friendly name
  *          * value
  *          Remaining fields are optional and they can be NULL
- * 
+ *
  * @param   entry pointer to entry
  * @return  ESP_OK valid
  *          ESP_FAIL error
@@ -186,7 +186,7 @@ esp_err_t esp32_manager_validate_entry(esp32_manager_entry_t * entry);
 
 /**
  * @brief   Reset all entry values in a namespace to their defaults
- * 
+ *
  * @param   namespace pointer to the namespace
  * @return  ESP_OK success
  *          ESP_FAIL error
@@ -196,7 +196,7 @@ esp_err_t esp32_manager_reset_namespace(esp32_manager_namespace_t * namespace);
 
 /**
  * @brief   Reset entry value to default
- * 
+ *
  * @param   namespace pointer to the namespace
  * @return  ESP_OK success
  *          ESP_FAIL error

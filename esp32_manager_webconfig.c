@@ -174,7 +174,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_root(httpd_req_t *req)
         // Search for reboot key
         e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
         if(e == ESP_OK) { // Reboot parameter found in query
-            e = esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req); // Generate HTML
+            e = esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH); // Generate HTML
             if(e == ESP_OK) {
                 ESP_LOGD(TAG, "Reboot page generated");
             } else {
@@ -193,7 +193,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_root(httpd_req_t *req)
         }
     }
 
-    e = esp32_manager_webconfig_page_root(esp32_manager_webconfig_buffer, req);
+    e = esp32_manager_webconfig_page_root(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH);
     if(e == ESP_OK) {
         ESP_LOGD(TAG, "Root document generated");
     } else {
@@ -312,7 +312,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 }
                 // Generate response
                 ESP_LOGD(TAG, "Generating response");
-                e = esp32_manager_webconfig_page_setup_namespace(esp32_manager_webconfig_buffer, req, namespace);
+                e = esp32_manager_webconfig_page_setup_namespace(esp32_manager_webconfig_buffer, req, namespace, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH);
                 if(e == ESP_OK) {
                     ESP_LOGD(TAG, "Setup namespace page generated");
                 } else {
@@ -320,7 +320,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 }
             } else { // namespace does not exist
                 ESP_LOGW(TAG, "Requested namespace does not exist");
-                e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req);
+                e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH);
                 if(e == ESP_OK) {
                     ESP_LOGD(TAG, "Setup page generated");
                 } else {
@@ -329,7 +329,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
                 }
             }
         } else if(e == ESP_ERR_NOT_FOUND) { // no namespace requested
-            e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req); // Return setup page
+            e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH); // Return setup page
             if(e == ESP_OK) {
                 ESP_LOGD(TAG, "Setup page generated");
             } else {
@@ -342,7 +342,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_setup(httpd_req_t * req)
         }
     } else if(e == ESP_ERR_NOT_FOUND) { // there is no query string
         ESP_LOGD(TAG, "No query string. Returning setup page.");
-        e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req); // Return setup page
+        e = esp32_manager_webconfig_page_setup(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH); // Return setup page
         if(e == ESP_OK) {
             ESP_LOGD(TAG, "Setup page generated");
         } else {
@@ -472,7 +472,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_factory(httpd_req_t * req)
         // Search for operation key
         e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
         if(e == ESP_OK) { // Reboot requested
-            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req);
+            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH);
             esp32_manager_webconfig_deferred_reboot(WEBCONFIG_MANAGER_REBOOT_DELAY);
         }
         e = httpd_query_key_value(esp32_manager_webconfig_content, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET, esp32_manager_webconfig_buffer, sizeof(esp32_manager_webconfig_buffer));
@@ -481,7 +481,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_factory(httpd_req_t * req)
             for(uint8_t i=0; i < ESP32_MANAGER_NAMESPACES_SIZE; ++i) {
                 esp32_manager_namespace_nvs_erase(esp32_manager_namespaces[i]);
             }
-            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req);
+            esp32_manager_webconfig_page_reboot(esp32_manager_webconfig_buffer, req, WEBCONFIG_MANAGER_RESPONSE_BUFFER_MAX_LENGTH);
             esp32_manager_webconfig_deferred_reboot(WEBCONFIG_MANAGER_REBOOT_DELAY);
         }
     }
@@ -503,7 +503,7 @@ esp_err_t esp32_manager_webconfig_uri_handler_factory(httpd_req_t * req)
     }
 }
 
-esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req)
+esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req, size_t buffer_size)
 {
     if(req == NULL || buffer == NULL) {
         ESP_LOGE(TAG, "req and buffer cannot be NULL");
@@ -515,14 +515,18 @@ esp_err_t esp32_manager_webconfig_page_root(char * buffer, httpd_req_t * req)
     // TODO Show featured values on home page
     // For now it is just a link to setup
 
-    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-    strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body><p><a class=\"button\" href=\"/setup\">Setup</a></a></body>");
+    strlcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE, buffer_size);
+    strlcat(buffer, "</head><body><p><a class=\"button\" href=\"/setup\">Setup</a></a></body>", buffer_size);
+
+    if(strlen(buffer) == (buffer_size -1)) {
+        return ESP_ERR_HTTPD_RESULT_TRUNC;
+    }
 
     return ESP_OK;
 }
 
-esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req)
+esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req, size_t buffer_size)
 {
     if(req == NULL || buffer == NULL) {
         ESP_LOGE(TAG, "req and buffer cannot be NULL");
@@ -531,14 +535,18 @@ esp_err_t esp32_manager_webconfig_page_reboot(char * buffer, httpd_req_t * req)
 
     // FIXME Buffer overrun protection
 
-    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-    strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body><h2>Rebooting device</h2><p>Wait 10 seconds before clicking <a href=\"/setup\">back</a> (Link might not work if network settings were changed)</p></body>");
+    strlcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE, buffer_size);
+    strlcat(buffer, "</head><body><h2>Rebooting device</h2><p>Wait 10 seconds before clicking <a href=\"/setup\">back</a> (Link might not work if network settings were changed)</p></body>", buffer_size);
+
+    if(strlen(buffer) == (buffer_size -1)) {
+        return ESP_ERR_HTTPD_RESULT_TRUNC;
+    }
 
     return ESP_OK;
 }
 
-esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req)
+esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req, size_t buffer_size)
 {
     if(req == NULL || buffer == NULL) {
         ESP_LOGE(TAG, "req and buffer cannot be NULL");
@@ -548,28 +556,32 @@ esp_err_t esp32_manager_webconfig_page_setup(char * buffer, httpd_req_t * req)
     // FIXME Buffer overrun protection
     ESP_LOGD(TAG, "Generating setup page");
 
-    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-    strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body><ul>");
+    strlcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE, buffer_size);
+    strlcat(buffer, "</head><body><ul>", buffer_size);
     for(uint8_t i=0; i < ESP32_MANAGER_NAMESPACES_SIZE; ++i) {
         if(esp32_manager_namespaces[i] != NULL) {
-            strcat(buffer, "<li><a href=\"/setup?namespace=");
-            strcat(buffer, esp32_manager_namespaces[i]->key);
-            strcat(buffer, "\">");
-            strcat(buffer, esp32_manager_namespaces[i]->friendly);
-            strcat(buffer, "</a></li>");
+            strlcat(buffer, "<li><a href=\"/setup?namespace=", buffer_size);
+            strlcat(buffer, esp32_manager_namespaces[i]->key, buffer_size);
+            strlcat(buffer, "\">", buffer_size);
+            strlcat(buffer, esp32_manager_namespaces[i]->friendly, buffer_size);
+            strlcat(buffer, "</a></li>", buffer_size);
         }
     }
-    strcat(buffer, "</ul><a class=\"button button-outline\" href=\"/factory?");
-    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE);
-    strcat(buffer, "=1\">Reboot device</a><a class=\"button button-clear\" href=\"/factory?");
-    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET);
-    strcat(buffer, "=1\">Factory reset</a></body></html>");
+    strlcat(buffer, "</ul><a class=\"button button-outline\" href=\"/factory?", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_REBOOT_DEVICE, buffer_size);
+    strlcat(buffer, "=1\">Reboot device</a><a class=\"button button-clear\" href=\"/factory?", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET, buffer_size);
+    strlcat(buffer, "=1\">Factory reset</a></body></html>", buffer_size);
+
+    if(strlen(buffer) == (buffer_size -1)) {
+        return ESP_ERR_HTTPD_RESULT_TRUNC;
+    }
 
     return ESP_OK;
 }
 
-esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_t * req, esp32_manager_namespace_t * namespace)
+esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_t * req, esp32_manager_namespace_t * namespace, size_t buffer_size)
 {
     if(req == NULL || buffer == NULL || namespace == NULL) {
         ESP_LOGE(TAG, "Invalid arguments");
@@ -578,41 +590,46 @@ esp_err_t esp32_manager_webconfig_page_setup_namespace(char * buffer, httpd_req_
 
     // FIXME Buffer overrun protection
 
-    strcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" media=\"screen\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-    strcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE);
-    strcat(buffer, "</head><body><form method=\"get\" action=\"/setup\"><br/><input name=\"namespace\" type=\"hidden\" value=\"");
-    strcat(buffer, namespace->key);
-    strcat(buffer, "\"><br/>");
+    strlcpy(buffer, "<html><head><link rel=\"stylesheet\" href=\"style.min.css\" media=\"screen\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_WEB_TITLE, buffer_size);
+    strlcat(buffer, "</head><body><form method=\"get\" action=\"/setup\"><br/><input name=\"namespace\" type=\"hidden\" value=\"", buffer_size);
+    strlcat(buffer, namespace->key, buffer_size);
+    strlcat(buffer, "\"><br/>", buffer_size);
 
     for(uint16_t i=0; i < namespace->size; ++i) {
         if(namespace->entries[i] == NULL) continue;
 
+        char * buffer_tail = &buffer[strlen(buffer)];
         esp32_manager_entry_t * entry = namespace->entries[i];
         if(entry->html_form_widget != NULL) {
-            entry->html_form_widget(entry, &buffer[strlen(buffer)]);
+            entry->html_form_widget(buffer_tail, entry, buffer_size - (buffer_tail - buffer));
         } else {
-            esp32_manager_webconfig_html_form_widget_default(entry, &buffer[strlen(buffer)]);
+            esp32_manager_webconfig_html_form_widget_default(buffer_tail, entry, buffer_size - (buffer_tail - buffer));
         }
     }
 
-    strcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a class=\"button button-outline\" href=\"/setup\">Back</a>");
+    strlcat(buffer, "<input type=\"submit\" value=\"submit\"></form><a class=\"button button-outline\" href=\"/setup\">Back</a>", buffer_size);
 
-    strcat(buffer, "<a class=\"button button-clear\" href=\"/setup?namespace=");
-    strcat(buffer, namespace->key);
-    strcat(buffer, "&");
-    strcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET);
-    strcat(buffer, "=1\">Restore defaults</a>");
+    strlcat(buffer, "<a class=\"button button-clear\" href=\"/setup?namespace=", buffer_size);
+    strlcat(buffer, namespace->key, buffer_size);
+    strlcat(buffer, "&", buffer_size);
+    strlcat(buffer, WEBCONFIG_MANAGER_URI_PARAM_FACTORY_RESET, buffer_size);
+    strlcat(buffer, "=1\">Restore defaults</a>", buffer_size);
 
-    strcat(buffer, "</body></html>");
+    strlcat(buffer, "</body></html>", buffer_size);
+
+    if(strlen(buffer) == (buffer_size -1)) {
+        return ESP_ERR_HTTPD_RESULT_TRUNC;
+    }
 
     return ESP_OK;
 }
 
-esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t * entry, char * dest)
+esp_err_t esp32_manager_webconfig_html_form_widget_default(char * buffer, esp32_manager_entry_t * entry, size_t buffer_size)
 {
-    strcpy(dest, "<div>");
-    strcat(dest, entry->friendly);
-    strcat(dest, "<br/>");
+    strlcpy(buffer, "<div>", buffer_size);
+    strlcat(buffer, entry->friendly, buffer_size);
+    strlcat(buffer, "<br/>", buffer_size);
 
     switch(entry->type) {
         case i8:
@@ -626,38 +643,38 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
         case flt:
         case dbl:
             // <input type="number" name="[entry.key]" value="[entry.value]" />
-            strcat(dest, "<input type=\"number\" name=\"");
-            strcat(dest, entry->key);
-            strcat(dest, "\" value=\"");
-            uint16_t len = strlen(dest);
-            entry->to_string(entry, &dest[len]);
-            strcat(dest, "\"");
+            strlcat(buffer, "<input type=\"number\" name=\"", buffer_size);
+            strlcat(buffer, entry->key, buffer_size);
+            strlcat(buffer, "\" value=\"", buffer_size);
+            uint16_t len = strlen(buffer);
+            entry->to_string(entry, &buffer[len]);
+            strlcat(buffer, "\"", buffer_size);
             if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
-                strcat(dest, "disabled");
+                strlcat(buffer, "disabled", buffer_size);
             }
-            strcat(dest, " />");
+            strlcat(buffer, " />", buffer_size);
             break;
         case text: // This type needs to be null-terminated
-            strcat(dest, "<input type=\"text\" name=\"");
-            strcat(dest, entry->key);
-            strcat(dest, "\" value=\"");
-            strcat(dest, (char *) entry->value);
-            strcat(dest, "\"");
+            strlcat(buffer, "<input type=\"text\" name=\"", buffer_size);
+            strlcat(buffer, entry->key, buffer_size);
+            strlcat(buffer, "\" value=\"", buffer_size);
+            strlcat(buffer, (char *) entry->value, buffer_size);
+            strlcat(buffer, "\"", buffer_size);
             if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
-                strcat(dest, "readonly");
+                strlcat(buffer, "readonly", buffer_size);
             }
-            strcat(dest, " />");
+            strlcat(buffer, " />", buffer_size);
             break;
         case password:
-            strcat(dest, "<input type=\"password\" name=\"");
-            strcat(dest, entry->key);
-            strcat(dest, "\" value=\"");
-            strcat(dest, (char *) entry->value);
-            strcat(dest, "\"");
+            strlcat(buffer, "<input type=\"password\" name=\"", buffer_size);
+            strlcat(buffer, entry->key, buffer_size);
+            strlcat(buffer, "\" value=\"", buffer_size);
+            strlcat(buffer, (char *) entry->value, buffer_size);
+            strlcat(buffer, "\"", buffer_size);
             if((entry->attributes & ESP32_MANAGER_ATTR_WRITE) == 0) {
-                strcat(dest, "readonly");
+                strlcat(buffer, "readonly", buffer_size);
             }
-            strcat(dest, " />");
+            strlcat(buffer, " />", buffer_size);
             break;
         // TODO Implement these cases
         case single_choice:
@@ -666,14 +683,19 @@ esp_err_t esp32_manager_webconfig_html_form_widget_default(esp32_manager_entry_t
         case image:
             ESP_LOGE(TAG, "Not implemented");
             //nvs_set_blob(handle->nvs_handle, entry->key, entry->value, size);
-        break;
+            break;
         default:
             ESP_LOGE(TAG, "Entry %s is of an unknown type", entry->key);
         break;
-        }
-        strcat(dest, "</div>");
+    }
 
-        return ESP_OK;
+    strlcat(buffer, "</div>", buffer_size);
+
+    if(strlen(buffer) == (buffer_size -1)) {
+        return ESP_ERR_HTTPD_RESULT_TRUNC;
+    }
+
+    return ESP_OK;
 }
 
 esp_err_t esp32_manager_webconfig_deferred_reboot(uint32_t delay)
