@@ -1,6 +1,6 @@
 /**
  * esp32_manager_storage.c
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -22,7 +22,7 @@ esp_err_t esp32_manager_storage_init()
         ESP_LOGD(TAG, "NVS initialized successfully");
     } else if(e == ESP_ERR_NVS_NO_FREE_PAGES) { // If it can't initialize NVS
         ESP_LOGW(TAG, "NVS partition was resized or changed. Formatting...");
-        const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);      
+        const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
         if(!nvs_partition) {
             ESP_LOGE(TAG, "No NVS partition found");
             return ESP_ERR_NVS_PART_NOT_FOUND;
@@ -267,6 +267,9 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace)
 
     for(uint16_t i=0; i < namespace->size; ++i) {
         esp32_manager_entry_t * entry = namespace->entries[i];
+
+        if((entry->attributes & ESP32_MANAGER_ATTR_NO_FLASH) != 0) continue; // Skip if flagged as NO_FLASH
+
         switch(entry->type) {
             case i8:
                 e = nvs_set_i8(namespace->nvs_handle, entry->key, *((int8_t *) entry->value));
@@ -320,7 +323,7 @@ esp_err_t esp32_manager_commit_to_nvs(esp32_manager_namespace_t * namespace)
         } else {
             ESP_LOGE(TAG, "Entry %s.%s could not be set for NVS commit", namespace->key, entry->key);
         }
-    
+
     }
 
     if(entries_to_commit_counter > 0) {
@@ -351,6 +354,9 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
 
     for(uint16_t i=0; i < namespace->size; ++i) {
         esp32_manager_entry_t * entry = namespace->entries[i];
+
+        if((entry->attributes & ESP32_MANAGER_ATTR_NO_FLASH) != 0) continue; // Skip if flagged as NO_FLASH
+
         switch(entry->type) {
             case i8:
                 e = nvs_get_i8(namespace->nvs_handle, entry->key, (int8_t *) entry->value);
@@ -421,7 +427,7 @@ esp_err_t esp32_manager_read_from_nvs(esp32_manager_namespace_t * namespace)
                 --i; // Decrement i so it the loop goes over the same entry again
                 ++error_counter; // Count it as an error
             }
-            
+
         }
     }
 

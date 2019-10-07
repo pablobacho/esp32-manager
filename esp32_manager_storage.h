@@ -25,9 +25,10 @@ extern "C" {
 #define ESP32_MANAGER_NAMESPACE_KEY_MAX_LENGTH  15  /*!< Maximum length of a namespace key */
 #define ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH      15  /*!< Maximum length of an entry key */
 
-#define ESP32_MANAGER_ATTR_READ         0b00000001  /*!< READ flag */
-#define ESP32_MANAGER_ATTR_WRITE        0b00000010  /*!< WRITE flag */
-#define ESP32_MANAGER_ATTR_READWRITE    0b00000011  /*!< READ & WRITE attributes. Meant for readability of the code because of both being commonly used together. */
+#define ESP32_MANAGER_ATTR_READ         BIT0    /*!< READ flag */
+#define ESP32_MANAGER_ATTR_WRITE        BIT1    /*!< WRITE flag */
+#define ESP32_MANAGER_ATTR_READWRITE    (BIT1 | BIT0)  /*!< READ & WRITE attributes. Meant for readability of the code because of both being commonly used together. */
+#define ESP32_MANAGER_ATTR_NO_FLASH     BIT3    /*!< Do not use flash/NVS */
 
 /**
  * Settings type.
