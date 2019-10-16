@@ -75,9 +75,22 @@ esp_err_t esp32_manager_mqtt_init() {
 
 esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace, esp32_manager_entry_t * entry)
 {
+    // Check if MQTT client has a valid connection
     if(esp32_manager_mqtt_client == NULL) {
         return ESP_FAIL;
     }
+
+    // Check valid namespace
+    if(esp32_manager_validate_namespace(namespace) != ESP_OK || esp32_manager_validate_entry(entry) != ESP_OK) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // Check entry manually, since the field .value can be NULL and still publish to MQTT
+    if(entry == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    } else if(entry->key == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    } 
     
     char topic[ESP32_MANAGER_MQTT_TOPIC_MAX_LENGTH] = "/";
     strcat(topic, esp32_manager_network_hostname);
@@ -87,7 +100,9 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
     strcat(topic, entry->key);
     
     char value_str[10]; // FIXME Magic number
-    entry->to_string(entry, value_str);
+    if(entry->to_string(entry, value_str) != ESP_OK) { // If value cannot ve read, publish keyword NULL
+        strcpy(value_str, "NULL");
+    }
 
     int msg_id = esp_mqtt_client_publish(esp32_manager_mqtt_client, topic, value_str, strlen(value_str), 0, false);
     ESP_LOGD(TAG, "Publish msg %d with topic %s and content %s", msg_id, topic, value_str);
