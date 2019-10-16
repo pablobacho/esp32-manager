@@ -81,7 +81,7 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
     }
 
     // Check valid namespace
-    if(esp32_manager_validate_namespace(namespace) != ESP_OK || esp32_manager_validate_entry(entry) != ESP_OK) {
+    if(esp32_manager_validate_namespace(namespace) != ESP_OK) {
         return ESP_ERR_INVALID_ARG;
     }
 
