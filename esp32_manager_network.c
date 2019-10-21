@@ -213,12 +213,12 @@ esp_err_t esp32_manager_network_wifi_start_station_mode()
         return ESP_FAIL;
     }
 
-    e = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, esp32_manager_network_hostname);
-    if(e == ESP_OK) {
-        ESP_LOGD(TAG, "Hostname set to %s", esp32_manager_network_hostname);
-    } else {
-        ESP_LOGE(TAG, "Error setting hostname: %s", esp_err_to_name(e));
-    }
+    // e = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, esp32_manager_network_hostname);
+    // if(e == ESP_OK) {
+    //     ESP_LOGD(TAG, "Hostname set to %s", esp32_manager_network_hostname);
+    // } else {
+    //     ESP_LOGE(TAG, "Error setting hostname: %s", esp_err_to_name(e));
+    // }
 
     return ESP_OK;
 }
@@ -322,9 +322,10 @@ esp_err_t esp32_manager_network_event_handler(void * context, system_event_t * e
         case SYSTEM_EVENT_STA_DISCONNECTED:
             ESP_LOGD(TAG, "Event: STA_DISCONNECTED");
             esp32_manager_network_status &= ~ESP32_MANAGER_NETWORK_STATUS_CONNECTED;
-            esp32_manager_network_wifi_stop();
-            esp32_manager_network_wifi_start_station_mode();
+            // esp32_manager_network_wifi_stop();
+            // esp32_manager_network_wifi_start_station_mode();
             esp_event_post(ESP32_MANAGER_NETWORK_EVENT_BASE, ESP32_MANAGER_NETWORK_EVENT_STA_DISCONNECTED, NULL, 0, portMAX_DELAY);
+            esp_wifi_connect();
         break;
         case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:
             ESP_LOGD(TAG, "Event: STA_AUTHMODE_CHANGE");
