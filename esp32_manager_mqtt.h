@@ -1,6 +1,6 @@
 /**
  * esp32_manager_mqtt.h
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -25,7 +25,7 @@ extern "C" {
 extern esp32_manager_namespace_t esp32_manager_mqtt_namespace;  /*!< Struct holding namespace information */
 
 /** @brief  Parameters for the Broker URL entry */
-#define ESP32_MANAGER_MQTT_BROKER_URL_KEY           "broker_url"    
+#define ESP32_MANAGER_MQTT_BROKER_URL_KEY           "broker_url"
 #define ESP32_MANAGER_MQTT_BROKER_URL_FRIENDLY      "Broker URL"
 #define ESP32_MANAGER_MQTT_BROKER_URL_MAX_LENGTH    64
 #define ESP32_MANAGER_MQTT_BROKER_URL_DEFAULT       "mqtt://test.mosquitto.org"
@@ -42,9 +42,9 @@ extern esp_mqtt_client_handle_t esp32_manager_mqtt_client;
 
 /**
  * @brief   Initialize esp32_manager_mqtt
- * 
+ *
  * This function should be called only once.
- * 
+ *
  * @return  ESP_OK: success
  *          ESP_FAIL: error
  */
@@ -52,9 +52,9 @@ esp_err_t esp32_manager_mqtt_init();
 
 /**
  * @brief   Publish entry value
- * 
+ *
  *          Publishes entry value in raw format under topic /[hostname]/[namespace.key]/[entry.key]
- * 
+ *
  * @return  ESP_OK: success
  *          ESP_FAIL: error
  */
@@ -62,9 +62,9 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
 
 /**
  * @brief   Event handler for mqtt legacy event loop
- * 
+ *
  *          Not to be called directly.
- * 
+ *
  * @param   event
  * @return  ESP_OK: success
  *          ESP_FAIL: error
@@ -73,9 +73,9 @@ esp_err_t esp32_manager_mqtt_event_handler(esp_mqtt_event_handle_t event);
 
 /**
  * @brief   Event handler for system event loop for network events
- * 
+ *
  *          Not to be called directly
- * 
+ *
  * @param   handler_arg
  * @param   base EVENT_BASE as defined on esp_event component
  * @param   id EVENT_ID as defined on esp_event component
@@ -85,7 +85,7 @@ void esp32_manager_mqtt_system_event_handler(void * handler_arg, esp_event_base_
 
 /**
  * @brief   esp32_manager callback to update MQTT broker url from string
- * 
+ *
  * @param   entry pointer to entry
  * @param   source string encoded new value
  * @return  ESP_OK success

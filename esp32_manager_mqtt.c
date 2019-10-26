@@ -1,6 +1,6 @@
 /**
  * esp32_manager_mqtt.c
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -32,9 +32,11 @@ esp32_manager_entry_t esp32_manager_mqtt_entry_broker_url = {
     .from_string = &esp32_manager_mqtt_entry_broker_url_from_string
 };
 
+ESP_EVENT_DEFINE_BASE(ESP32_MANAGER_MQTT_EVENT_BASE)
+
 esp_err_t esp32_manager_mqtt_init() {
     esp_err_t e;
-    
+
     // Register namespace
     e = esp32_manager_register_namespace(&esp32_manager_mqtt_namespace);
     if(e == ESP_OK) {
@@ -50,6 +52,15 @@ esp_err_t esp32_manager_mqtt_init() {
         ESP_LOGD(TAG, "%s setting registered", esp32_manager_mqtt_entry_broker_url.key);
     } else {
         ESP_LOGE(TAG, "Error registering %s", esp32_manager_mqtt_entry_broker_url.key);
+        return ESP_FAIL;
+    }
+
+    // Read settings from NVS if any exist
+    e = esp32_manager_read_from_nvs(&esp32_manager_mqtt_namespace);
+    if(e == ESP_OK) {
+        ESP_LOGD(TAG, "MQTT settings loaded. Broker URL: %s", esp32_manager_mqtt_broker_url);
+    } else {
+        ESP_LOGE(TAG, "Error loading MQTT settings: %s", esp_err_to_name(e));
         return ESP_FAIL;
     }
 
@@ -90,28 +101,28 @@ esp_err_t esp32_manager_mqtt_publish_entry(esp32_manager_namespace_t * namespace
         return ESP_ERR_INVALID_ARG;
     } else if(entry->key == NULL) {
         return ESP_ERR_INVALID_ARG;
-    } 
-    
+    }
+
     char topic[ESP32_MANAGER_MQTT_TOPIC_MAX_LENGTH] = "/";
     strcat(topic, esp32_manager_network_hostname);
     strcat(topic, "/");
     strcat(topic, namespace->key);
     strcat(topic, "/");
     strcat(topic, entry->key);
-    
+
     char value_str[10]; // FIXME Magic number
     if(entry->to_string(entry, value_str) != ESP_OK) { // If value cannot ve read, publish keyword NULL
         strcpy(value_str, "NULL");
     }
 
     int msg_id = esp_mqtt_client_publish(esp32_manager_mqtt_client, topic, value_str, strlen(value_str), 0, false);
-    ESP_LOGD(TAG, "Publish msg %d with topic %s and content %s", msg_id, topic, value_str);
+    ESP_LOGD(TAG, "Publish msg %d to server %s with topic %s and content %s", msg_id, esp32_manager_mqtt_broker_url, topic, value_str);
 
     return ESP_OK;
 }
 
 esp_err_t esp32_manager_mqtt_event_handler(esp_mqtt_event_handle_t event)
-{    
+{
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
@@ -154,16 +165,18 @@ void esp32_manager_mqtt_system_event_handler(void * handler_arg, esp_event_base_
         .event_handle = esp32_manager_mqtt_event_handler,
     };
 
-    switch(id) {
-        case ESP32_MANAGER_NETWORK_EVENT_STA_GOT_IP:
-            esp32_manager_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
-            esp_mqtt_client_start(esp32_manager_mqtt_client);
-            break;
-        case ESP32_MANAGER_NETWORK_EVENT_STA_LOST_IP:
-            esp_mqtt_client_stop(esp32_manager_mqtt_client);
-            esp32_manager_mqtt_client = NULL;
-            break;
-        default: break;
+    if(base == ESP32_MANAGER_NETWORK_EVENT_BASE) {
+        switch(id) {
+            case ESP32_MANAGER_NETWORK_EVENT_STA_GOT_IP:
+                esp32_manager_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+                esp_mqtt_client_start(esp32_manager_mqtt_client);
+                break;
+            case ESP32_MANAGER_NETWORK_EVENT_STA_LOST_IP:
+                esp_mqtt_client_stop(esp32_manager_mqtt_client);
+                esp32_manager_mqtt_client = NULL;
+                break;
+            default: break;
+        }
     }
 }
 
@@ -186,7 +199,6 @@ esp_err_t esp32_manager_mqtt_entry_broker_url_from_string(esp32_manager_entry_t 
     }
 
     strlcpy((char *) entry->value, source, broker_url_len +1);
-
     ESP_LOGD(TAG, "MQTT broker url successfully updated to %s", source);
 
     return ESP_OK;
