@@ -1,0 +1,43 @@
+menu "ESP32 Manager"
+
+config ESP32_MANAGER_NAMESPACES_SIZE
+    int "Maximum number of namespaces that can be registered"
+    default 10
+    help
+        Maximum number of namespaces that can be registered
+
+config ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT
+    string "Network: default hostname prefix"
+    default "esp32-device"
+    help
+        Default hostname is generated from [hostname prefix]-[2 last bytes of WiFi STA MAC]
+
+config ESP32_MANAGER_NETWORK_SSID_DEFAULT
+    string "Network: Default SSID to connect to"
+    default ""
+    help
+        SSID for preconfigured network connection
+
+config ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT
+    string "Network: Password for default network to connect to"
+    default ""
+    help
+        Password of the default network to connect to
+
+config ESP32_MANAGER_NETWORK_AP_SSID
+    string "Network: AP SSID"
+    default "wifi-manager"
+    
+config ESP32_MANAGER_NETWORK_AP_PASSWORD
+    string "Network: AP password"
+    default "12345678"
+
+config ESP32_MANAGER_WEBCONFIG_TITLE
+    string "Webconfig: Title"
+    default "ESP32 Manager Webconfig"
+
+config ESP32_MANAGER_MQTT_BROKER_URL
+    string "MQTT: Default broker url"
+    default "mqtt://test.mosquitto.org"
+
+endmenu

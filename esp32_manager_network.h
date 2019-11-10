@@ -33,23 +33,23 @@ extern "C" {
 #define ESP32_MANAGER_NETWORK_HOSTNAME_KEY        "hostname"
 #define ESP32_MANAGER_NETWORK_HOSTNAME_FRIENDLY   "Hostname"
 #define ESP32_MANAGER_NETWORK_HOSTNAME_MAX_LENGTH 32
-#define ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT    "esp32-device"
+#define ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT    CONFIG_ESP32_MANAGER_NETWORK_HOSTNAME_DEFAULT
 
 #define ESP32_MANAGER_NETWORK_SSID_KEY            "ssid"      /*!< SSID entry key */
 #define ESP32_MANAGER_NETWORK_SSID_FRIENDLY       "SSID"      /*!< SSID friendly name */
 #define ESP32_MANAGER_NETWORK_SSID_MAX_LENGTH     32          /*!< Maximum length of an SSID */
-#define ESP32_MANAGER_NETWORK_SSID_DEFAULT        ""          /*!< Default SSID to connect to */
+#define ESP32_MANAGER_NETWORK_SSID_DEFAULT        CONFIG_ESP32_MANAGER_NETWORK_SSID_DEFAULT          /*!< Default SSID to connect to */
 
 #define ESP32_MANAGER_NETWORK_PASSWORD_KEY        "password"  /*!< password entry key */
 #define ESP32_MANAGER_NETWORK_PASSWORD_FRIENDLY   "Password"  /*!< password friendly name */
 #define ESP32_MANAGER_NETWORK_PASSWORD_MIN_LENGTH 8           /*!< Minimum password length */
 #define ESP32_MANAGER_NETWORK_PASSWORD_MAX_LENGTH 63          /*!< Maximum password length */
-#define ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT    ""          /*!< Default password of the SSID to connect to */
+#define ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT    CONFIG_ESP32_MANAGER_NETWORK_PASSWORD_DEFAULT          /*!< Default password of the SSID to connect to */
 
 #define ESP32_MANAGER_NETWORK_ENTRIES_SIZE          3
 
-#define ESP32_MANAGER_NETWORK_AP_SSID         "wifi-manager"  /*!< SSID to use when creating an AP */
-#define ESP32_MANAGER_NETWORK_AP_PASSWORD     "12345678"      /*!< Password of the AP created */
+#define ESP32_MANAGER_NETWORK_AP_SSID         CONFIG_ESP32_MANAGER_NETWORK_AP_SSID  /*!< SSID to use when creating an AP */
+#define ESP32_MANAGER_NETWORK_AP_PASSWORD     CONFIG_ESP32_MANAGER_NETWORK_AP_PASSWORD      /*!< Password of the AP created */
 
 /**
  * Mode to start WiFi in

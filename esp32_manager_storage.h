@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#define ESP32_MANAGER_NAMESPACES_SIZE           10  /*!< Maximum number of namespaces that can be registered */
+#define ESP32_MANAGER_NAMESPACES_SIZE           CONFIG_ESP32_MANAGER_NAMESPACES_SIZE  /*!< Maximum number of namespaces that can be registered */
 #define ESP32_MANAGER_NAMESPACE_KEY_MAX_LENGTH  15  /*!< Maximum length of a namespace key */
 #define ESP32_MANAGER_ENTRY_KEY_MAX_LENGTH      15  /*!< Maximum length of an entry key */
 

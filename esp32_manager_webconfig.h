@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-#define WEBCONFIG_MANAGER_WEB_TITLE             "ESP32 Manager Webconfig"   /*!< Title. Will be shown on generated pages. */
+#define WEBCONFIG_MANAGER_WEB_TITLE             CONFIG_ESP32_MANAGER_WEBCONFIG_TITLE   /*!< Title. Will be shown on generated pages. */
 
 #define WEBCONFIG_MANAGER_NAMESPACE_KEY         "webconfig"
 #define WEBCONFIG_MANAGER_NAMESPACE_FRIENDLY    "Web configuration"

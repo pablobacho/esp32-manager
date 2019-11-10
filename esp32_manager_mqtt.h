@@ -28,7 +28,7 @@ extern esp32_manager_namespace_t esp32_manager_mqtt_namespace;  /*!< Struct hold
 #define ESP32_MANAGER_MQTT_BROKER_URL_KEY           "broker_url"
 #define ESP32_MANAGER_MQTT_BROKER_URL_FRIENDLY      "Broker URL"
 #define ESP32_MANAGER_MQTT_BROKER_URL_MAX_LENGTH    64
-#define ESP32_MANAGER_MQTT_BROKER_URL_DEFAULT       "mqtt://test.mosquitto.org"
+#define ESP32_MANAGER_MQTT_BROKER_URL_DEFAULT       CONFIG_ESP32_MANAGER_MQTT_BROKER_URL
 extern char esp32_manager_mqtt_broker_url[ESP32_MANAGER_MQTT_BROKER_URL_MAX_LENGTH]; /*!< Variable to store the broker url */
 extern esp32_manager_entry_t esp32_manager_mqtt_entry_broker_url; /*!< Struct holding broker url entry information */
 
