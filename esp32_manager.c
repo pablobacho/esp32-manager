@@ -1,6 +1,6 @@
 /**
  * esp32_manager.c
- * 
+ *
  * (C) 2019 - Pablo Bacho <pablo@pablobacho.com>
  * This code is licensed under the MIT License.
  */
@@ -41,13 +41,13 @@ esp_err_t esp32_manager_init()
     }
 
     // Initialize MQTT
-    e = esp32_manager_mqtt_init();
-    if(e == ESP_OK) {
-        ESP_LOGD(TAG, "MQTT initialized");
-    } else {
-        ESP_LOGE(TAG, "Error initializing MQTT");
-        return ESP_FAIL;
-    }
+    //e = esp32_manager_mqtt_init();
+    // if(e == ESP_OK) {
+    //     ESP_LOGD(TAG, "MQTT initialized");
+    // } else {
+    //     ESP_LOGE(TAG, "Error initializing MQTT");
+    //     return ESP_FAIL;
+    // }
 
     return ESP_OK;
 }
