@@ -109,9 +109,9 @@ First, there is a namespace registered for networking, called `network`. This na
 Using `esp32_manager_network_wifi_start(AUTO)` will first check the contents of the `network.ssid` entry.
 
 - If it is empty, then an Access-Point (AP) will be created. You can connect to this access point using the default ssid `wifi-manager` and password `12345678`. These values can be changed in `esp32_manager_network.h`. After connecting to the AP, open a browser and go to `192.168.4.1` to configure WiFi.
-- If it is not empty, it will try to connect to a WiFi with that SSID, and it will keep trying to connect to it until it successes.
+- If it is not empty, it will try to connect to a WiFi with that SSID, and it will keep trying to connect to it until it succeeds.
 
-You can also specify on what mode you want WiFi to start replacing AUTO by STA or AP:
+You can also specify on which mode you want WiFi to start replacing AUTO by STA or AP:
 
 - `STA` or *station mode*: Will try to connect to a WiFi network with SSID and passwords already known.
 - `AP` or *AP mode*: Creates an AP (access point) a 3rd device can connect to, such as a smartphone or computer.
@@ -119,7 +119,7 @@ You can also specify on what mode you want WiFi to start replacing AUTO by STA o
 
 ### Accessing programmatically from a remote machine via HTTP
 
-All same operations can be perform programmatically from another machine connected to the same network via HTTP GET methods.
+All operations can be perform programmatically from another machine connected to the same network via HTTP GET methods.
 
 On the `/setup` uri, use the query parameters `namespace` and the setting key to update a value. For example:
 
